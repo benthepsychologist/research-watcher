@@ -3,21 +3,22 @@
 **Project**: Research Watcher v0
 **Based on**: AIP 1.0 & Spec 1.0
 **Status**: 🟡 In Progress
-**Current Phase**: Phase 0 → Phase 1
+**Current Phase**: Phase 1 → Phase 2
+**Last Updated**: 2025-11-06
 
 ---
 
 ## Milestone Overview
 
-| Phase | Milestone | Status | Target |
-|-------|-----------|--------|--------|
-| 0 | Bootstrap & Environment | 🔄 | Week 1 |
-| 1 | Backend Core (API Skeleton) | ⏳ | Week 1-2 |
-| 2 | Collector + Dual-Write | ⏳ | Week 2-3 |
-| 3 | Frontend & User Flow | ⏳ | Week 3-4 |
-| 4 | Event Ledger & Consumer Stub | ⏳ | Week 4 |
-| 5 | v1 Fan-Out Readiness | ⏳ | Week 5 |
-| 6 | Agentic Extensions (Optional) | ⏳ | Future |
+| Phase | Milestone | Status | Completed |
+|-------|-----------|--------|-----------|
+| 0 | Bootstrap & Environment | ✅ | 2025-11-06 |
+| 1 | Backend Core (API Skeleton) | ✅ | 2025-11-06 |
+| 2 | Collector + Dual-Write | ⏳ | - |
+| 3 | Frontend & User Flow | ⏳ | - |
+| 4 | Event Ledger & Consumer Stub | ⏳ | - |
+| 5 | v1 Fan-Out Readiness | ⏳ | - |
+| 6 | Agentic Extensions (Optional) | ⏳ | - |
 
 **Legend**: ✅ Complete | 🔄 In Progress | ⏳ Pending | ⏭️ Skipped
 

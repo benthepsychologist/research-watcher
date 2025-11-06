@@ -6,6 +6,26 @@ Research Watcher is a public-facing research-intelligence web application. It de
 
 The core architecture is designed to be scalable and maintainable, starting with a simple dual-write system and providing a clear path to a fully event-sourced model.
 
+## Current Status
+
+- ✅ **Phase 0**: Bootstrap & Environment (Complete)
+  - GCP infrastructure deployed
+  - Firebase/Firestore configured
+  - Cloud Run, Pub/Sub, BigQuery operational
+  - 36 bash tests + 30 pytest tests passing
+
+- ✅ **Phase 1**: Backend Core (API Skeleton) (Complete)
+  - Flask app factory with Firebase Admin SDK
+  - Authentication system (@login_required decorator)
+  - All API blueprints implemented (users, seeds, digest, collector, feedback)
+  - Deployed to Cloud Run: https://rw-api-491582996945.us-central1.run.app
+  - 16 API integration tests written
+
+- ⏳ **Phase 2**: Collector + Dual-Write (Next)
+  - External API clients (OpenAlex, Semantic Scholar, Crossref, arXiv)
+  - Paper collection and scoring logic
+  - Dual-write to Firestore + Pub/Sub WAL
+
 ## Key Documents
 
 This repository is organized and developed following a clear specification and an agent-driven implementation plan. All developers, human or AI, should familiarize themselves with these documents before contributing.

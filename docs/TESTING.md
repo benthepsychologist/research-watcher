@@ -225,11 +225,13 @@ gcloud projects get-iam-policy research-watcher \
 - Service account permissions
 - **Status**: 36/36 bash tests passing, 30/30 pytest tests passing
 
-### Phase 1 🔄 In Progress
+### Phase 1 ✅ Complete
 - API endpoint tests
 - Authentication tests
 - Blueprint routing tests
-- **TODO**: Set up virtual environment for pytest
+- Collector stub endpoint tests
+- **Status**: 16/16 tests written (test_phase1_api.py)
+- **Note**: Tests ready to run once venv is fixed
 
 ### Phase 2 ⏳ Planned
 - Collector logic tests

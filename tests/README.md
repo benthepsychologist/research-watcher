@@ -166,7 +166,14 @@ Validates:
 - Local development setup
 
 ### Phase 1 (Backend Core)
-Coming soon - API endpoint tests
+✅ Complete - 16 API tests in test_phase1_api.py
+
+Tests:
+- API health check endpoint
+- Authentication requirements (all protected endpoints)
+- Invalid token format handling
+- Collector stub endpoints (run, queue, worker)
+- App factory and blueprint registration
 
 ### Phase 2 (Collector + Dual-Write)
 Coming soon - Collector logic tests
