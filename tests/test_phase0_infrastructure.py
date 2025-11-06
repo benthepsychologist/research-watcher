@@ -56,7 +56,9 @@ class TestCloudRun:
     def test_service_content(self):
         """Cloud Run service should return expected content"""
         response = requests.get(CLOUD_RUN_URL, timeout=10)
-        assert "Hello" in response.text, "Service should return greeting"
+        data = response.json()
+        assert data['status'] == 'healthy', "Service should return healthy status"
+        assert 'service' in data, "Service should return service name"
 
 
 @pytest.mark.integration
