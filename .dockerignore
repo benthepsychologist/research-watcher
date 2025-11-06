@@ -1,0 +1,44 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+dist
+build
+.venv
+venv
+env
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Environment
+.env
+serviceAccountKey.json
+
+# Firebase
+.firebase
+firebase-debug.log
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+
+# Logs
+*.log
+
+# Development
+devserver.sh
