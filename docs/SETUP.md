@@ -107,15 +107,22 @@ bq mk --dataset \
 
 ### 5.2 Create Events Table
 
+**IMPORTANT**: The Pub/Sub → BigQuery subscription (created in Step 6) will auto-create the table with the required schema. However, you can pre-create it if needed:
+
 ```bash
-# Create partitioned table for events
+# The Pub/Sub subscription expects this schema:
+# data:JSON,subscription_name:STRING,message_id:STRING,publish_time:TIMESTAMP,attributes:JSON
+
+# Pre-create table (optional - subscription will create it automatically)
 bq mk --table \
-  --time_partitioning_field=ts \
+  --time_partitioning_field=publish_time \
   --time_partitioning_type=DAY \
   --description="WAL events from Pub/Sub" \
   ${PROJECT_ID}:research_wal.events \
-  v:INTEGER,type:STRING,runId:STRING,uid:STRING,ts:TIMESTAMP,items:JSON
+  data:JSON,subscription_name:STRING,message_id:STRING,publish_time:TIMESTAMP,attributes:JSON
 ```
+
+**Note**: The WAL event structure (v, type, runId, uid, ts, items) will be stored inside the `data` field as JSON.
 
 ### 5.3 Verify Table
 
@@ -131,12 +138,14 @@ bq show research_wal.events
 
 ```bash
 # Create subscription that writes directly to BigQuery
+# Note: The --write-metadata flag includes subscription_name, message_id, publish_time, and attributes
 gcloud pubsub subscriptions create rw-wal-to-bq \
   --topic=rw-wal \
   --bigquery-table=${PROJECT_ID}:research_wal.events \
-  --use-topic-schema \
   --write-metadata
 ```
+
+**Important**: The subscription will auto-create the BigQuery table if it doesn't exist, or use the existing table schema. The `data` field will contain the JSON message payload.
 
 ### 6.2 Verify Subscription
 

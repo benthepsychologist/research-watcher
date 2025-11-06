@@ -16,6 +16,8 @@ from pathlib import Path
 # Test configuration
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "research-watcher")
 REGION = "us-central1"
+# Note: This URL is specific to the research-watcher project
+# For other projects, update this or fetch dynamically via gcloud
 CLOUD_RUN_URL = "https://rw-api-491582996945.us-central1.run.app"
 
 

@@ -5,6 +5,8 @@
 **Project ID**: research-watcher
 **Project Number**: 491582996945
 
+**Note**: URLs, project numbers, and service account emails shown are specific to this GCP project. They will differ when deploying to another project.
+
 ---
 
 ## ✅ Completed Infrastructure

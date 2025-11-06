@@ -84,16 +84,38 @@ Project Structure
 │
 ├── public/
 │   ├── index.html                 # Landing page
-│   ├── app.html                   # Authenticated UI
-│   ├── about.html
-│   └── privacy.html
+│   ├── app.html                   # Authenticated UI (Phase 3)
+│   ├── about.html                 # About page (Phase 3)
+│   └── privacy.html               # Privacy policy (Phase 3)
+│
+├── tests/
+│   ├── __init__.py
+│   ├── test_phase0_infrastructure.py  # Phase 0 integration tests
+│   └── README.md                      # Testing documentation
+│
+├── scripts/
+│   ├── test_phase0_infrastructure.sh  # Bash integration tests
+│   └── devserver.sh                   # Local development server
+│
+├── docs/
+│   ├── AIP.md                     # Architecture & Implementation Plan
+│   ├── spec.md                    # Technical specification
+│   ├── SETUP.md                   # Infrastructure setup guide
+│   ├── TESTING.md                 # Testing guide
+│   ├── INFRASTRUCTURE_STATUS.md   # Current deployment status
+│   └── PHASE0_ACCEPTANCE.md       # Phase 0 acceptance report
 │
 ├── main.py                        # Entrypoint for Gunicorn/Cloud Run
 ├── requirements.txt               # Dependencies (pip)
+├── pytest.ini                     # Pytest configuration
 ├── Dockerfile                     # Cloud Run container
+├── .dockerignore                  # Docker build exclusions
 ├── firebase.json                  # Hosting + rewrite rules
 ├── firestore.rules                # Security rules
+├── firestore.indexes.json         # Firestore indexes
+├── MILESTONES.md                  # Development plan and milestones
 ├── .env                           # Local dev environment (git-ignored)
+├── .env.example                   # Environment variable template
 └── serviceAccountKey.json         # Local dev only (git-ignored)
 
 
@@ -101,13 +123,18 @@ Project Structure
 
 Environment Variables
 
-Key	Description
-GOOGLE_APPLICATION_CREDENTIALS	Path to local service key (dev only)
-GOOGLE_CLOUD_PROJECT	Firebase/GCP project ID
-S2_API_KEY	Optional Semantic Scholar key
-OPENALEX_EMAIL	Contact email for OpenAlex
-CROSSREF_MAILTO	Contact email for Crossref
-USE_PUBSUB_AS_SOURCE	false (v0 dual-write) / true (v1 event-sourced)
+Key	Description	Default
+GOOGLE_APPLICATION_CREDENTIALS	Path to local service key (dev only)	./serviceAccountKey.json
+GOOGLE_CLOUD_PROJECT	Firebase/GCP project ID	(required)
+S2_API_KEY	Optional Semantic Scholar API key	(optional)
+OPENALEX_EMAIL	Contact email for OpenAlex	(required)
+CROSSREF_MAILTO	Contact email for Crossref	(required)
+USE_PUBSUB_AS_SOURCE	false (v0 dual-write) / true (v1 event-sourced)	false
+USE_TASKS_FANOUT	Enable Cloud Tasks per-user fan-out	false
+ENABLE_ANALYTICS	Controls Pub/Sub → BigQuery sink	true
+FLASK_ENV	Flask environment (development/production)	development
+PORT	Local development server port	3000
+LOG_LEVEL	Logging verbosity (DEBUG/INFO/WARNING/ERROR)	INFO
 
 
 ⸻
@@ -216,27 +243,29 @@ service cloud.firestore {
 
     // Users manage only their own profile
     match /users/{uid} {
-      allow read, write: if request.auth.uid == uid;
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // Seeds
+    // Seeds - users manage their own research seeds
     match /seeds/{uid} {
-      allow read, write: if request.auth.uid == uid;
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // Digests
-    match /digests/{uid}/{doc} {
-      allow read, write: if request.auth.uid == uid;
+    // Digests - users can only read their own digests
+    match /digests/{uid}/{doc=**} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false; // Admin SDK only
     }
 
-    // User events
-    match /events/{uid}/{doc} {
-      allow create, read: if request.auth.uid == uid;
+    // User events - users can create and read their own events
+    match /events/{uid}/{doc=**} {
+      allow create, read: if request.auth != null && request.auth.uid == uid;
+      allow update, delete: if false; // Events are immutable
     }
 
-    // Papers: global catalog (read-only for clients)
-    match /papers/{doc} {
-      allow read: if true;
+    // Papers: global catalog (read-only for authenticated users)
+    match /papers/{doc=**} {
+      allow read: if request.auth != null;
       allow write: if false; // Admin SDK only
     }
   }
@@ -248,8 +277,14 @@ service cloud.firestore {
 Pub/Sub → BigQuery Sink
 	•	Topic: rw-wal
 	•	BigQuery Dataset: research_wal
-	•	Table: events (partitioned by _PARTITIONTIME)
-	•	Schema Fields: v, type, runId, uid, ts, items (JSON)
+	•	Table: events (partitioned by publish_time)
+	•	Schema Fields (BigQuery Native):
+		◦	data (JSON) - Contains the WAL event payload with fields: v, type, runId, uid, ts, items
+		◦	subscription_name (STRING) - Name of the Pub/Sub subscription
+		◦	message_id (STRING) - Unique message identifier
+		◦	publish_time (TIMESTAMP) - When the message was published (partition field)
+		◦	attributes (JSON) - Message attributes from Pub/Sub
+	•	Note: The Pub/Sub → BigQuery subscription auto-creates this schema. The WAL event structure (v, type, runId, uid, ts, items) is stored in the data field as JSON.
 	•	Purpose: Durable, queryable event ledger for replay, analytics, and migration to full event sourcing.
 
 ⸻

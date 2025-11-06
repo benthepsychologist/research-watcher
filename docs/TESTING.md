@@ -52,8 +52,9 @@ pytest tests/test_phase0_infrastructure.py -m unit -v
 ```
 
 **Test coverage:**
-- 33 integration tests (require GCP)
+- 24 integration tests (require GCP)
 - 6 unit tests (local only)
+- Total: 30 pytest tests
 
 ---
 
@@ -222,7 +223,7 @@ gcloud projects get-iam-policy research-watcher \
 - Infrastructure validation
 - Configuration verification
 - Service account permissions
-- **Status**: 36/36 bash tests passing, 33 pytest tests written
+- **Status**: 36/36 bash tests passing, 30/30 pytest tests passing
 
 ### Phase 1 🔄 In Progress
 - API endpoint tests

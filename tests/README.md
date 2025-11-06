@@ -157,7 +157,7 @@ If tests timeout:
 ## Phase-Specific Tests
 
 ### Phase 0 (Bootstrap & Environment)
-✅ Complete - 36 bash tests, 33 pytest tests
+✅ Complete - 36 bash tests, 30 pytest tests (24 integration + 6 unit)
 
 Validates:
 - GCP infrastructure deployment

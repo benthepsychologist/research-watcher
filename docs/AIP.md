@@ -19,12 +19,12 @@ Steps
 	•	Topic rw-wal (Pub/Sub)
 	•	Dataset research_wal, table events (BigQuery)
 	•	Sink from topic → table
-	5.	Deploy Firebase Hosting stub: index.html, privacy.html, etc.
+	5.	Deploy Firebase Hosting stub: index.html, privacy.html, etc. (Note: Deferred to Phase 3 - requires Firebase CLI installation)
 	6.	Add env vars to Secrets Manager / Cloud Run (see spec).
 	7.	Create OIDC service account for Cloud Scheduler; grant invoker role to Cloud Run.
 	8.	Commit and tag as v0-bootstrap.
 
-✅ Output: Firebase + GCP infrastructure online; Cloud Run service placeholder deploys; Hosting rewrite verified.
+✅ Output: Firebase + GCP infrastructure online; Cloud Run service placeholder deploys; Hosting configuration ready (deployment deferred to Phase 3).
 
 ⸻
 
