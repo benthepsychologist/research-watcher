@@ -35,6 +35,20 @@ def gcloud_command(cmd: list) -> tuple[bool, str]:
         return False, str(e)
 
 
+def bq_command(cmd: list) -> tuple[bool, str]:
+    """Execute bq command and return success status and output"""
+    try:
+        result = subprocess.run(
+            ["/usr/bin/bq"] + cmd,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        return result.returncode == 0, result.stdout.strip()
+    except Exception as e:
+        return False, str(e)
+
+
 @pytest.mark.integration
 class TestCloudRun:
     """Test Cloud Run service deployment"""
@@ -141,39 +155,29 @@ class TestBigQuery:
 
     def test_dataset_exists(self):
         """BigQuery dataset research_wal should exist"""
-        cmd = [
-            "bq", "show",
-            f"{PROJECT_ID}:research_wal"
-        ]
-        success, _ = gcloud_command(cmd)
+        success, _ = bq_command(["show", f"{PROJECT_ID}:research_wal"])
         assert success, "Dataset 'research_wal' should exist"
 
     def test_events_table_exists(self):
         """BigQuery events table should exist"""
-        cmd = [
-            "bq", "show",
-            f"{PROJECT_ID}:research_wal.events"
-        ]
-        success, _ = gcloud_command(cmd)
+        success, _ = bq_command(["show", f"{PROJECT_ID}:research_wal.events"])
         assert success, "Table 'research_wal.events' should exist"
 
     def test_table_has_data_field(self):
         """Events table should have data field"""
-        cmd = [
-            "bq", "show", "--format=prettyjson",
+        success, output = bq_command([
+            "show", "--format=prettyjson",
             f"{PROJECT_ID}:research_wal.events"
-        ]
-        success, output = gcloud_command(cmd)
+        ])
         assert success and '"name": "data"' in output, \
             "Table should have 'data' field"
 
     def test_table_partitioning(self):
         """Events table should be partitioned by publish_time"""
-        cmd = [
-            "bq", "show", "--format=prettyjson",
+        success, output = bq_command([
+            "show", "--format=prettyjson",
             f"{PROJECT_ID}:research_wal.events"
-        ]
-        success, output = gcloud_command(cmd)
+        ])
         assert success and '"field": "publish_time"' in output, \
             "Table should be partitioned by 'publish_time'"
 
