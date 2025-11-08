@@ -1,9 +1,10 @@
-🧭 AgentsWay Implementation Plan (AIP 1.0)
+🧭 AgentsWay Implementation Plan (AIP 1.1)
 
 Project: Research Watcher
 Spec Version: 1.0 (2025-11-05)
 Implementation Phase: v0 → v1-ready
 Mode: Dual-write (event-driven DB SoT + Pub/Sub WAL)
+Last Updated: 2025-11-08 (Phase 2 complete, Phase 3 expanded)
 
 ⸻
 
@@ -47,49 +48,113 @@ Steps
 
 ⸻
 
-📥 Phase 2 – Collector + Dual-Write (WAL Emission)
+📥 Phase 2 – Collector + Dual-Write (WAL Emission) ✅ COMPLETE
 
-Goal: Implement daily collector pipeline with FireStore writes + Pub/Sub publish.
+Goal: Implement daily collector pipeline with Firestore writes + Pub/Sub publish.
 
 Steps
-	1.	Build clients for OpenAlex, Semantic Scholar, Crossref, arXiv (services/).
-	2.	Implement collect_and_rank() → fetch, dedupe, score.
-	3.	Implement /api/collect/run:
-	•	Verify OIDC token from Scheduler SA.
-	•	For each user with seeds: fetch papers → upsert Firestore (papers/, digests/{uid}/latest).
-	•	Publish WAL to Pub/Sub (rw-wal).
-	4. 	Create daily Cloud Scheduler job (09:00 BA time).
-	5.	Confirm BigQuery sink populates research_wal.events.
-	6.	Enforce users.quota.runsPerDay.
-	7.	Commit and tag v0-collector-dual-write.
+	1.	✅ Build clients for OpenAlex, Semantic Scholar, arXiv (services/).
+		•	Note: Dropped Crossref in favor of S2 semantic intelligence
+		•	Using own S2 API key during limited alpha
+	2.	✅ Implement collect_and_rank() → fetch, dedupe, score.
+		•	Multi-source deduplication (DOI/arXiv ID/title hash)
+		•	Scoring: citations (30pts) + recency (25pts) + venue (20pts) + OA (15pts) + abstract (10pts)
+	3.	✅ Implement /api/collect/run:
+		•	Verify OIDC token from Scheduler SA
+		•	For each user with seeds: fetch papers → upsert Firestore (papers/, digests/{uid}_latest)
+		•	Publish WAL to Pub/Sub (rw-wal)
+		•	Document ID sanitization (replace / with _)
+	4. 	✅ Cloud Scheduler job already configured (09:00 BA time).
+	5.	✅ Confirm BigQuery sink populates research_wal.events.
+	6.	⏭️ Quota enforcement deferred to Phase 3.
+	7.	✅ Commit and tag v0-collector-dual-write.
 
 ✅ Output: End-to-end daily collector run writing Firestore and Pub/Sub WAL events.
+📊 Test Results: 1 user, 49 papers, 1 digest, 0 errors, WAL in BigQuery verified.
 
 ⸻
 
-📊 Phase 3 – Frontend and User Flow
+📊 Phase 3 – Frontend and User Flow (EXPANDED v1.1)
 
-Goal: Minimal web UI for sign-in, seed entry, and digest view.
+Goal: Interactive web UI with sign-in, seed management, digest view, AND real-time search.
+
+Architecture: HTMX-powered SPA with Firebase Auth
 
 Steps
-	1.	Firebase Hosting public/ directory ready.
-	2.	Auth flow: Google or email login → call /api/users/sync.
-	3.	Simple HTML/JS for:
-	•	Seed management (/api/seeds)
-	•	Digest viewer (/api/digest/latest)
-	•	Feedback (/api/feedback)
-	4.	Add CORS + JWT headers handling.
-	5.	Verify Hosting rewrite to Cloud Run:
 
-"rewrites": [
-  { "source": "/api/**", "run": { "serviceId": "rw-api", "region": "us-central1" } },
-  { "source": "**", "destination": "/index.html" }
-]
+Backend (Interactive Search):
+	1.	Implement /api/search endpoint (GET, @login_required):
+		•	Query params: ?q={query}&days_back={7}&max_results={20}
+		•	Reuse collect_and_rank() logic from Phase 2
+		•	Return JSON: { papers: [...], query: "...", count: N }
+		•	Client-side rate limiting (1 req/sec for S2 compliance)
+		•	Track search events in Firestore events/{uid}/searches
 
-	6.	Deploy Hosting v0 to Firebase.
-	7.	Commit and tag v0-frontend.
+Frontend (HTMX + Firebase Auth):
+	2.	Create app.html (authenticated SPA):
+		•	HTMX 1.9+ for dynamic content loading
+		•	Tailwind CSS (CDN) for styling
+		•	Firebase Auth UI widget (Google + Email)
+		•	Navigation: Digest | Search | Seeds | Saved
 
-✅ Output: Usable public web app with Auth and functional backend calls.
+	3.	Implement page components (HTMX partials):
+		•	Digest View: Load /api/digest/latest on page load
+		•	Interactive Search: Real-time search form → /api/search
+		•	Seed Management: CRUD interface for /api/seeds
+		•	Saved Papers: User's saved/muted papers from feedback
+		•	Paper Cards: Reusable template with title, authors, score, abstract
+
+	4.	Auth flow:
+		•	Landing page (index.html) → Sign In button
+		•	Firebase Auth popup → Get ID token
+		•	Store token in localStorage
+		•	Redirect to app.html
+		•	All HTMX requests include Authorization: Bearer {token}
+		•	Call /api/users/sync on first login
+
+	5.	Add CORS configuration to Flask:
+		•	Allow Firebase Hosting domain
+		•	Allow localhost:5000 for dev
+		•	Credentials: true for auth headers
+
+	6.	Configure Firebase Hosting rewrites:
+
+{
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      { "source": "/api/**", "run": { "serviceId": "rw-api", "region": "us-central1" } },
+      { "source": "**", "destination": "/index.html" }
+    ]
+  }
+}
+
+	7.	Deploy to Firebase Hosting:
+		•	firebase deploy --only hosting
+		•	Verify /app.html accessible
+		•	Test auth flow end-to-end
+
+	8.	Quota enforcement (deferred from Phase 2):
+		•	Implement maxSeeds validation in /api/seeds POST
+		•	Add runsPerDay check in collector (prevent double-runs)
+		•	Display quota limits in UI
+
+	9.	Commit and tag v0-frontend.
+
+✅ Output:
+	•	Usable web app with Auth and backend integration
+	•	Users can view daily digest
+	•	Users can search papers interactively
+	•	Users can manage seeds and save papers
+	•	Quota limits enforced
+
+🎯 Alpha User Experience:
+	•	Sign in with Google
+	•	Add 3 research seeds (LLMs, quantum computing, etc.)
+	•	View daily digest (49 papers from automated collection)
+	•	Search for "transformer models" → get real-time results
+	•	Save interesting papers
+	•	Return tomorrow for fresh digest
 
 ⸻
 
@@ -98,19 +163,42 @@ Steps
 Goal: Verify WAL integrity and prepare for event-sourced flip.
 
 Steps
-	1.	Define event schema (v1) in code and BigQuery table.
-	2.	Create sample consumer endpoint /_wal/push (secured OIDC) → parse event → idempotent upsert.
-	3.	Verify Pub/Sub → consumer → Firestore works on test topic.
-	4.	Query BigQuery for recent events:
+	1.	✅ Event schema (v1) already defined in Phase 2 (digest.created).
+	2.	Extend WAL schema for interactive search:
+		•	Add event type: search.executed
+		•	Fields: { query, resultsCount, durationMs, uid, ts }
+		•	Purpose: Track search usage for analytics and S2 rate limit monitoring
+	3.	Create sample consumer endpoint /_wal/push (secured OIDC) → parse event → idempotent upsert.
+	4.	Verify Pub/Sub → consumer → Firestore works on test topic.
+	5.	Query BigQuery for search analytics:
 
-SELECT type, COUNT(*) FROM research_wal.events
-WHERE DATE(_PARTITIONTIME)=CURRENT_DATE()
-GROUP BY type;
+-- Daily search volume
+SELECT DATE(ts) as date, COUNT(*) as searches
+FROM research_wal.events
+WHERE type = 'search.executed'
+GROUP BY date
+ORDER BY date DESC;
 
-	5.	Add replay script (BigQuery → Firestore) for full restore.
-	6.	Commit and tag v0-ledger-verified.
+-- User search patterns (for quota planning)
+SELECT uid, COUNT(*) as daily_searches
+FROM research_wal.events
+WHERE type = 'search.executed'
+  AND DATE(ts) = CURRENT_DATE()
+GROUP BY uid
+ORDER BY daily_searches DESC;
 
-✅ Output: Durable WAL in BigQuery; consumer stub exists; system replayable.
+	6.	Add replay script (BigQuery → Firestore) for full restore.
+	7.	Analytics dashboard (optional):
+		•	S2 API usage tracking
+		•	Search vs digest usage ratio
+		•	Most searched topics
+	8.	Commit and tag v0-ledger-verified.
+
+✅ Output:
+	•	Durable WAL in BigQuery
+	•	Consumer stub exists
+	•	System replayable
+	•	Search analytics tracked for quota planning
 
 ⸻
 
@@ -118,19 +206,35 @@ GROUP BY type;
 
 Goal: Lay the plumbing for Cloud Tasks / Pub/Sub worker architecture.
 
+Note: Interactive search remains synchronous (user-initiated), this phase only affects scheduled collection.
+
 Steps
 	1.	Implement /api/collect/queue → enqueue per-user tasks (stubbed in v0).
 	2.	Implement /api/collect/worker → process single user by UID.
+		•	Same logic as current /api/collect/run but for single user
+		•	Returns individual stats
 	3.	Feature flags:
 
-USE_PUBSUB_AS_SOURCE=false
-USE_TASKS_FANOUT=false
+USE_PUBSUB_AS_SOURCE=false  # Phase 6 event-sourcing
+USE_TASKS_FANOUT=false      # This phase
+ENABLE_SEARCH_CACHING=false # Future optimization
 
 	4.	Create IAM roles for Tasks and Worker service accounts.
-	5.	Add monitoring metrics (Pub/Sub backlog, Firestore writes).
-	6.	Commit and tag v1-ready-fanout.
+	5.	Add monitoring metrics:
+		•	Pub/Sub backlog
+		•	Firestore writes/sec
+		•	S2 API rate (searches/sec) ← NEW for search tracking
+		•	Cloud Tasks queue depth
+	6.	Rate limiting strategy:
+		•	Daily collector: Batch processing, 13 users sequential
+		•	Interactive search: Per-user throttling (1 req/sec client-side)
+		•	Combined: Monitor total S2 usage, alert if >100 req/5min
+	7.	Commit and tag v1-ready-fanout.
 
-✅ Output: All hooks exist to move from synchronous collector to distributed fan-out.
+✅ Output:
+	•	All hooks exist to move from synchronous collector to distributed fan-out
+	•	Search remains synchronous (appropriate for user-facing feature)
+	•	Rate limiting monitoring in place
 
 ⸻
 
@@ -139,14 +243,45 @@ USE_TASKS_FANOUT=false
 Goal: Enable AI/automation agents to react to WAL events.
 
 Steps
-	1.	Create BigQuery view vw_recent_highscore for score>3.5.
-	2.	Agent subscribes via Pub/Sub filter or polls view daily.
-	3.	Add Agent Bridge API (/api/events, /api/actions).
-	4.	Use service account with least privilege.
-	5.	Validate end-to-end agent loop: detect → summarize → store summary to Firestore.
+	1.	Create BigQuery views for agent triggers:
+
+-- High-score papers (existing)
+CREATE VIEW vw_recent_highscore AS
+SELECT * FROM research_wal.events
+WHERE type = 'digest.created'
+  AND score > 3.5
+  AND DATE(ts) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY);
+
+-- Trending topics (from search data)
+CREATE VIEW vw_trending_searches AS
+SELECT
+  JSON_EXTRACT_SCALAR(items, '$.query') as query,
+  COUNT(*) as search_count,
+  COUNT(DISTINCT uid) as unique_users
+FROM research_wal.events
+WHERE type = 'search.executed'
+  AND DATE(ts) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+GROUP BY query
+ORDER BY search_count DESC
+LIMIT 50;
+
+	2.	Agent subscribes via Pub/Sub filter or polls views daily.
+	3.	Add Agent Bridge API:
+		•	GET /api/events → Query recent WAL events (service account auth)
+		•	POST /api/actions → Agent-triggered actions (summarize, notify)
+		•	GET /api/analytics/trending → Expose trending topics to agents
+	4.	Use service account with least privilege (read-only BigQuery).
+	5.	Example agents:
+		•	Summarization Agent: Detect high-score papers → generate summaries
+		•	Notification Agent: Email digests for saved papers
+		•	Trend Detection Agent: Identify emerging research areas from searches
+		•	Research Graph Agent: Build citation networks from collected papers
 	6.	Commit and tag agent-bridge-alpha.
 
-✅ Output: Extensible agent hooks for summarization, notifications, and analysis.
+✅ Output:
+	•	Extensible agent hooks for summarization, notifications, and analysis
+	•	Search data feeds agent trend detection
+	•	Bridge API for external automation
 
 ⸻
 
