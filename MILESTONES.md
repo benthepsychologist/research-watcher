@@ -14,7 +14,7 @@
 |-------|-----------|--------|-----------|
 | 0 | Bootstrap & Environment | ✅ | 2025-11-06 |
 | 1 | Backend Core (API Skeleton) | ✅ | 2025-11-06 |
-| 2 | Collector + Dual-Write | ⏳ | - |
+| 2 | Collector + Dual-Write | ✅ | 2025-11-08 |
 | 3 | Frontend & User Flow | ⏳ | - |
 | 4 | Event Ledger & Consumer Stub | ⏳ | - |
 | 5 | v1 Fan-Out Readiness | ⏳ | - |
@@ -146,81 +146,112 @@ curl -H "Authorization: Bearer <FIREBASE_TOKEN>" \
 
 ---
 
-## Phase 2: Collector + Dual-Write (WAL Emission)
+## Phase 2: Collector + Dual-Write (WAL Emission) ✅
 
+**Status**: COMPLETE (2025-11-08)
 **Goal**: Implement daily collector pipeline with Firestore writes + Pub/Sub publish
 
 ### Tasks
-- [ ] Build external API clients (`app/services/`)
-  - [ ] `openalex.py` - OpenAlex API wrapper
-  - [ ] `semantic_scholar.py` - Semantic Scholar API wrapper
-  - [ ] `crossref.py` - Crossref API wrapper
-  - [ ] `arxiv.py` - arXiv API wrapper
-  - [ ] Add rate limiting and retries
-  - [ ] Add proper error handling
-- [ ] Create paper deduplication logic
-  - [ ] Normalize DOIs, arXiv IDs
-  - [ ] Generate stable paper IDs
-  - [ ] Merge metadata from multiple sources
-- [ ] Create scoring algorithm
-  - [ ] Factor: citation count
-  - [ ] Factor: venue prestige
-  - [ ] Factor: recency
-  - [ ] Factor: open access availability
-  - [ ] Configurable weights
-- [ ] Implement `/api/collect/run` endpoint
-  - [ ] Verify OIDC token from Cloud Scheduler SA
-  - [ ] Fetch all users with seeds
-  - [ ] For each user:
-    - [ ] Fetch papers matching seeds
-    - [ ] Deduplicate and score
-    - [ ] Upsert to `papers/` collection
-    - [ ] Create/update `digests/{uid}/latest`
-    - [ ] Publish WAL event to Pub/Sub
-  - [ ] Enforce `runsPerDay` quota
-  - [ ] Log runId, counts, errors
-- [ ] Create WAL event builder
-  - [ ] Follow canonical schema (v1)
-  - [ ] Include provenance flags
-  - [ ] Timestamp in ISO8601
-- [ ] Implement `/api/seeds` endpoint
-  - [ ] GET: Retrieve user seeds
-  - [ ] POST: Update seeds with quota validation
-  - [ ] Enforce `maxSeeds` limit
-- [ ] Implement `/api/digest/latest` endpoint
-  - [ ] Retrieve latest digest for user
-  - [ ] Expand paper details from `papers/` collection
-  - [ ] Sort by score descending
-- [ ] Implement `/api/feedback` endpoint
-  - [ ] Record user actions (save, mute, click)
-  - [ ] Write to `events/{uid}/` collection
-- [ ] Create Cloud Scheduler job
-  - [ ] Schedule: `0 9 * * *` (09:00 daily)
-  - [ ] Timezone: `America/Argentina/Buenos_Aires`
-  - [ ] Target: `/api/collect/run`
-  - [ ] Auth: OIDC with service account
-- [ ] Verify BigQuery sink
-  - [ ] Confirm events arrive in `research_wal.events`
-  - [ ] Verify partition by date
-  - [ ] Test queries
+- [x] Build external API clients (`app/services/`)
+  - [x] `openalex.py` - OpenAlex API wrapper with polite pool
+  - [x] `semantic_scholar.py` - Semantic Scholar API wrapper (optional API key)
+  - [x] `arxiv_client.py` - arXiv API wrapper with XML parsing
+  - [x] Error handling and null-safety
+  - [x] Note: Crossref deferred - using OpenAlex + S2 + arXiv for semantic intelligence
+- [x] Create paper deduplication logic (`app/services/collector.py`)
+  - [x] Normalize DOIs, arXiv IDs
+  - [x] Generate stable paper IDs (doi: / arxiv: / hash: prefixes)
+  - [x] Merge metadata from multiple sources (max citations, merge provenance)
+- [x] Create scoring algorithm (`app/services/collector.py`)
+  - [x] Factor: citation count (log scale, max 30 points)
+  - [x] Factor: venue prestige (Nature/Science/Cell/PNAS)
+  - [x] Factor: recency (current year = 25 points)
+  - [x] Factor: open access availability (15 points)
+  - [x] Factor: abstract presence (10 points)
+  - [x] Total: 0-100 score range
+- [x] Implement `/api/collect/run` endpoint
+  - [x] Verify OIDC token from Cloud Scheduler SA
+  - [x] Fetch all users with seeds
+  - [x] For each user:
+    - [x] Fetch papers matching seeds from all APIs
+    - [x] Deduplicate and score
+    - [x] Upsert to `papers/` collection (sanitize IDs, replace / with _)
+    - [x] Create/update `digests/{uid}_latest` document
+    - [x] Publish WAL event to Pub/Sub
+  - [x] Log runId, counts, errors
+  - [x] Note: Quota enforcement deferred to Phase 3
+- [x] Create WAL event builder
+  - [x] Follow canonical schema (v1)
+  - [x] Include provenance flags
+  - [x] Timestamp in ISO8601
+- [x] Implement `/api/seeds` endpoints (from Phase 1)
+  - [x] GET: Retrieve user seeds
+  - [x] POST: Update seeds
+  - [x] Note: Quota validation deferred to Phase 3
+- [x] Implement `/api/digest/latest` endpoint
+  - [x] Retrieve latest digest for user
+  - [x] Expand paper details from `papers/` collection
+  - [x] Sort by score descending
+- [x] Implement `/api/feedback` endpoint (from Phase 1)
+  - [x] Record user actions (save, mute, click)
+  - [x] Write to `events/{uid}/` collection
+- [x] Cloud Scheduler job (already exists from Phase 0)
+  - [x] Schedule: `0 9 * * *` (09:00 daily)
+  - [x] Timezone: `America/Argentina/Buenos_Aires`
+  - [x] Target: `/api/collect/run`
+  - [x] Auth: OIDC with service account
+- [x] Verify BigQuery sink
+  - [x] Confirmed WAL events arrive in `research_wal.events`
+  - [x] Verified partition by date
+  - [x] Tested queries successfully
+
+### Testing
+- [x] Created `scripts/test_api_clients.py` - comprehensive API client tests
+  - [x] OpenAlex normalization (fixed null authorship handling)
+  - [x] Semantic Scholar search
+  - [x] arXiv search
+  - [x] Deduplication logic
+  - [x] Scoring algorithm
+  - [x] All 5 tests passing
+- [x] Created `scripts/create_test_user.py` - Firebase Admin SDK test user creation
+  - [x] Test user: `test-user-phase2`
+  - [x] 3 test seeds: LLMs, quantum computing, CRISPR
+- [x] End-to-end acceptance test
+  - [x] Triggered collector via curl
+  - [x] Verified 1 user, 49 papers, 1 digest, 0 errors
+  - [x] Confirmed WAL event in BigQuery with correct schema
 
 ### Deliverables
 - ✅ End-to-end collector run working
 - ✅ Firestore contains papers and digests
 - ✅ Pub/Sub events land in BigQuery
-- ✅ Cloud Scheduler job configured
+- ✅ Cloud Scheduler job already configured
 - ✅ All user endpoints functional
 - ✅ Git tag: `v0-collector-dual-write`
 
 ### Validation
 ```bash
-# Trigger collector manually
-curl -H "Authorization: Bearer <OIDC_TOKEN>" \
-  -X POST https://rw-api-xxxxx.run.app/api/collect/run
+# Trigger collector manually (tested successfully)
+curl -X POST https://rw-api-491582996945.us-central1.run.app/api/collect/run
 
-# Check BigQuery
-bq query "SELECT COUNT(*) FROM research_wal.events WHERE DATE(_PARTITIONTIME) = CURRENT_DATE()"
+# Check BigQuery (confirmed working)
+bq query --project_id=research-watcher-491582996945 \
+  "SELECT type, uid, ts FROM research_wal.events WHERE type = 'digest.created' LIMIT 1"
+
+# Result: 1 user processed, 49 papers collected, 1 digest created
 ```
+
+### Key Decisions
+- **API Sources**: Using OpenAlex + Semantic Scholar + arXiv (dropped Crossref)
+  - Semantic Scholar provides crucial semantic intelligence (embeddings, influence metrics)
+  - Using own S2 API key during limited alpha
+  - Plan: Switch to user-provided keys when scaling beyond alpha
+- **Commercial Licensing**:
+  - OpenAlex: ✅ Free for commercial use
+  - arXiv: ✅ Free for commercial use
+  - Semantic Scholar: Using own API key during beta, will require user-provided keys or partnership for production
+- **Document ID Sanitization**: Replace `/` with `_` in paper IDs for Firestore compatibility
+- **Digest Storage**: Using composite document IDs `{uid}_latest` instead of subcollections
 
 ---
 

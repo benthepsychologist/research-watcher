@@ -21,10 +21,18 @@ The core architecture is designed to be scalable and maintainable, starting with
   - Deployed to Cloud Run: https://rw-api-491582996945.us-central1.run.app
   - 16 API integration tests written
 
-- ⏳ **Phase 2**: Collector + Dual-Write (Next)
-  - External API clients (OpenAlex, Semantic Scholar, Crossref, arXiv)
-  - Paper collection and scoring logic
-  - Dual-write to Firestore + Pub/Sub WAL
+- ✅ **Phase 2**: Collector + Dual-Write (Complete)
+  - External API clients (OpenAlex, Semantic Scholar, arXiv)
+  - Paper deduplication and scoring algorithm (0-100 scale)
+  - Full collector endpoint with dual-write (Firestore + Pub/Sub WAL)
+  - End-to-end tested: 49 papers collected, WAL events in BigQuery
+  - Test scripts: test_api_clients.py (5/5 passing), create_test_user.py
+
+- ⏳ **Phase 3**: Frontend & User Flow (Next)
+  - Firebase Auth UI integration
+  - Seed management interface
+  - Digest viewer with paper cards
+  - User feedback tracking
 
 ## Key Documents
 

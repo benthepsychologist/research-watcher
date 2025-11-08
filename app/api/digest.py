@@ -28,8 +28,8 @@ def get_latest_digest():
     db = current_app.db
 
     try:
-        # Get latest digest from digests/{uid}/latest
-        digest_ref = db.collection('digests').document(uid).collection('items').document('latest')
+        # Get latest digest using composite document ID
+        digest_ref = db.collection('digests').document(f"{uid}_latest")
         digest_doc = digest_ref.get()
 
         if not digest_doc.exists:
@@ -39,8 +39,32 @@ def get_latest_digest():
             }), 404
 
         digest_data = digest_doc.to_dict()
+
+        # Expand paper details from papers collection
+        paper_ids = digest_data.get('papers', [])
+        papers = []
+
+        for paper_id in paper_ids:
+            paper_ref = db.collection('papers').document(paper_id)
+            paper_doc = paper_ref.get()
+
+            if paper_doc.exists:
+                paper_data = paper_doc.to_dict()
+                papers.append(paper_data)
+
+        # Sort by score descending
+        papers.sort(key=lambda p: p.get('score', 0), reverse=True)
+
+        # Return digest with expanded papers
+        result = {
+            'runId': digest_data.get('runId'),
+            'createdAt': digest_data.get('createdAt'),
+            'paperCount': len(papers),
+            'papers': papers
+        }
+
         return jsonify({
-            'digest': digest_data
+            'digest': result
         }), 200
 
     except Exception as e:
