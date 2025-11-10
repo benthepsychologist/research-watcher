@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Watcher - Your Research Dashboard</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Loading spinner */
+        .htmx-indicator {
+            display: none;
+        }
+        .htmx-request .htmx-indicator {
+            display: inline-block;
+        }
+        .htmx-request.htmx-indicator {
+            display: inline-block;
+        }
+
+        /* Paper card hover effect */
+        .paper-card {
+            transition: all 0.2s ease;
+        }
+        .paper-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-indigo-600">Research Watcher</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="user-email" class="text-sm text-gray-700"></span>
+                    <button id="sign-out-btn" class="text-sm text-gray-600 hover:text-gray-900">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Tab Navigation -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex space-x-8" role="tablist">
+                <button class="tab-button py-4 px-1 border-b-2 border-indigo-500 font-medium text-sm text-indigo-600"
+                        data-tab="digest">
+                    Daily Digest
+                </button>
+                <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        data-tab="search">
+                    Search Papers
+                </button>
+                <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        data-tab="seeds">
+                    My Seeds
+                </button>
+                <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        data-tab="saved">
+                    Saved Papers
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div id="content-area">
+            <!-- Content loaded via HTMX or JS -->
+            <div id="digest-content" class="tab-content">
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                    <p class="mt-4 text-gray-600">Loading your digest...</p>
+                </div>
+            </div>
+
+            <div id="search-content" class="tab-content hidden">
+                <!-- Search interface will be loaded here -->
+            </div>
+
+            <div id="seeds-content" class="tab-content hidden">
+                <!-- Seeds management will be loaded here -->
+            </div>
+
+            <div id="saved-content" class="tab-content hidden">
+                <!-- Saved papers will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Firebase Configuration -->
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB4YJl0zYqP9LzQxH_3wKZ9X7nX8RLqYxQ",
+            authDomain: "research-watcher.firebaseapp.com",
+            projectId: "research-watcher",
+            storageBucket: "research-watcher.firebasestorage.app",
+            messagingSenderId: "491582996945",
+            appId: "1:491582996945:web:d0f6e5e4c3b2a1f0e9d8c7"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // API Base URL
+        const API_BASE = 'https://rw-api-491582996945.us-central1.run.app/api';
+
+        // Global auth token
+        let authToken = null;
+
+        // Check authentication on load
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                // Not signed in, redirect to landing page
+                window.location.href = '/index.html';
+                return;
+            }
+
+            // User is signed in
+            authToken = await user.getIdToken();
+            document.getElementById('user-email').textContent = user.email;
+
+            // Configure HTMX to include auth header
+            document.body.addEventListener('htmx:configRequest', (event) => {
+                event.detail.headers['Authorization'] = `Bearer ${authToken}`;
+            });
+
+            // Sync user profile
+            await syncUserProfile();
+
+            // Load initial digest
+            loadDigest();
+        });
+
+        // Sync user profile (idempotent)
+        async function syncUserProfile() {
+            try {
+                const response = await fetch(`${API_BASE}/users/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!response.ok) {
+                    console.error('Failed to sync user profile');
+                }
+            } catch (error) {
+                console.error('Error syncing user profile:', error);
+            }
+        }
+
+        // Load digest
+        async function loadDigest() {
+            try {
+                const response = await fetch(`${API_BASE}/digest/latest`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+                const container = document.getElementById('digest-content');
+
+                if (!response.ok || !data.papers || data.papers.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-12">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No digest yet</h3>
+                            <p class="mt-1 text-sm text-gray-500">Add some research seeds and check back tomorrow for your personalized digest.</p>
+                            <div class="mt-6">
+                                <button onclick="showTab('seeds')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                                    Add Seeds
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Render papers
+                container.innerHTML = `
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Your Daily Digest</h2>
+                        <p class="text-sm text-gray-600 mt-1">${data.papers.length} papers ranked by relevance</p>
+                    </div>
+                    <div class="space-y-4">
+                        ${data.papers.map(paper => renderPaperCard(paper)).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading digest:', error);
+                document.getElementById('digest-content').innerHTML = `
+                    <div class="text-center py-12 text-red-600">
+                        <p>Failed to load digest. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Render paper card
+        function renderPaperCard(paper) {
+            const score = Math.round(paper.score || 0);
+            const scoreColor = score >= 70 ? 'bg-green-100 text-green-800' : score >= 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
+            const authors = (paper.authors || []).slice(0, 3).join(', ') + (paper.authors && paper.authors.length > 3 ? ', et al.' : '');
+            const abstract = (paper.abstract || '').slice(0, 300) + (paper.abstract && paper.abstract.length > 300 ? '...' : '');
+
+            return `
+                <div class="paper-card bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                                <a href="${paper.url || '#'}" target="_blank" class="hover:text-indigo-600">
+                                    ${paper.title || 'Untitled'}
+                                </a>
+                            </h3>
+                            <p class="text-sm text-gray-600 mb-2">${authors}</p>
+                            <p class="text-sm text-gray-500 mb-3">${paper.venue || 'Unknown Venue'} • ${paper.year || 'N/A'} • ${paper.citationCount || 0} citations</p>
+                            ${abstract ? `<p class="text-sm text-gray-700 mb-3">${abstract}</p>` : ''}
+                            <div class="flex items-center space-x-2">
+                                ${paper.oa ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Open Access</span>' : ''}
+                                ${paper.provenance ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">${paper.provenance}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${scoreColor}">
+                                ${score}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Tab switching
+        function showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.remove('border-transparent', 'text-gray-500');
+                    btn.classList.add('border-indigo-500', 'text-indigo-600');
+                } else {
+                    btn.classList.remove('border-indigo-500', 'text-indigo-600');
+                    btn.classList.add('border-transparent', 'text-gray-500');
+                }
+            });
+
+            // Show/hide content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`${tabName}-content`).classList.remove('hidden');
+
+            // Load content if needed
+            if (tabName === 'search') {
+                loadSearchInterface();
+            } else if (tabName === 'seeds') {
+                loadSeedsInterface();
+            } else if (tabName === 'saved') {
+                loadSavedPapers();
+            }
+        }
+
+        // Tab button click handlers
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.addEventListener('click', () => showTab(btn.dataset.tab));
+        });
+
+        // Sign out
+        document.getElementById('sign-out-btn').addEventListener('click', async () => {
+            await auth.signOut();
+            window.location.href = '/index.html';
+        });
+
+        // Load search interface
+        let searchTimeout = null;
+        function loadSearchInterface() {
+            document.getElementById('search-content').innerHTML = `
+                <div class="max-w-4xl mx-auto">
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Search Papers</h2>
+                        <p class="text-sm text-gray-600">Search across OpenAlex, Semantic Scholar, and arXiv</p>
+                    </div>
+
+                    <!-- Search Form -->
+                    <div class="bg-white rounded-lg shadow p-6 mb-6">
+                        <div class="flex gap-4">
+                            <div class="flex-1">
+                                <input
+                                    type="text"
+                                    id="search-query"
+                                    placeholder="e.g., transformer models, quantum computing, CRISPR..."
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    onkeyup="handleSearchKeyup(event)"
+                                />
+                            </div>
+                            <button
+                                onclick="performSearch()"
+                                class="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                                Search
+                            </button>
+                        </div>
+                        <div class="mt-4 flex gap-4 text-sm">
+                            <label class="flex items-center">
+                                <span class="text-gray-700 mr-2">Days back:</span>
+                                <select id="search-days" class="border border-gray-300 rounded px-2 py-1">
+                                    <option value="7">7 days</option>
+                                    <option value="14">14 days</option>
+                                    <option value="30">30 days</option>
+                                </select>
+                            </label>
+                            <label class="flex items-center">
+                                <span class="text-gray-700 mr-2">Max results:</span>
+                                <select id="search-max" class="border border-gray-300 rounded px-2 py-1">
+                                    <option value="10">10</option>
+                                    <option value="20" selected>20</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Search Results -->
+                    <div id="search-results">
+                        <div class="text-center py-12 text-gray-500">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <p class="mt-4">Enter a search query to find relevant papers</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Handle search keyup (search on Enter)
+        function handleSearchKeyup(event) {
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        }
+
+        // Perform search
+        async function performSearch() {
+            const query = document.getElementById('search-query').value.trim();
+            if (!query) {
+                alert('Please enter a search query');
+                return;
+            }
+
+            const daysBack = document.getElementById('search-days').value;
+            const maxResults = document.getElementById('search-max').value;
+            const resultsContainer = document.getElementById('search-results');
+
+            // Show loading state
+            resultsContainer.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                    <p class="mt-4 text-gray-600">Searching for "${query}"...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/search?q=${encodeURIComponent(query)}&days_back=${daysBack}&max_results=${maxResults}`,
+                    {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Search failed');
+                }
+
+                // Render results
+                if (data.papers && data.papers.length > 0) {
+                    resultsContainer.innerHTML = `
+                        <div class="mb-4">
+                            <p class="text-sm text-gray-600">
+                                Found ${data.count} papers for "${data.query}" (${data.durationMs}ms)
+                            </p>
+                        </div>
+                        <div class="space-y-4">
+                            ${data.papers.map(paper => renderPaperCard(paper)).join('')}
+                        </div>
+                    `;
+                } else {
+                    resultsContainer.innerHTML = `
+                        <div class="text-center py-12 text-gray-500">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <p class="mt-4">No papers found for "${query}"</p>
+                            <p class="text-sm mt-2">Try adjusting your search terms or increasing the date range</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-12 text-red-600">
+                        <p>Search failed: ${error.message}</p>
+                        <p class="text-sm mt-2 text-gray-500">Please try again later</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Load seeds interface
+        async function loadSeedsInterface() {
+            const container = document.getElementById('seeds-content');
+
+            // Show loading
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                    <p class="mt-4 text-gray-600">Loading your seeds...</p>
+                </div>
+            `;
+
+            try {
+                // Fetch current seeds
+                const response = await fetch(`${API_BASE}/seeds`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+                const seeds = data.items || [];
+
+                // Render seeds management UI
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto">
+                        <div class="mb-8">
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2">My Research Seeds</h2>
+                            <p class="text-sm text-gray-600">Keywords and topics that define your research interests (max 3 for free tier)</p>
+                        </div>
+
+                        <!-- Current Seeds -->
+                        <div class="bg-white rounded-lg shadow p-6 mb-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Current Seeds (${seeds.length}/3)</h3>
+                            <div id="seeds-list" class="space-y-2 mb-4">
+                                ${seeds.length > 0 ? seeds.map((seed, idx) => `
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200">
+                                        <span class="text-gray-900">${seed}</span>
+                                        <button
+                                            onclick="removeSeed(${idx})"
+                                            class="text-red-600 hover:text-red-800 text-sm"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                `).join('') : '<p class="text-gray-500 text-sm">No seeds yet. Add your first research topic below.</p>'}
+                            </div>
+
+                            <!-- Add Seed Form -->
+                            ${seeds.length < 3 ? `
+                                <div class="border-t pt-4">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-2">Add New Seed</h4>
+                                    <div class="flex gap-2">
+                                        <input
+                                            type="text"
+                                            id="new-seed-input"
+                                            placeholder="e.g., large language models, quantum computing..."
+                                            class="flex-1 px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
+                                            onkeyup="if(event.key==='Enter') addSeed()"
+                                        />
+                                        <button
+                                            onclick="addSeed()"
+                                            class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                                        >
+                                            Add
+                                        </button>
+                                    </div>
+                                </div>
+                            ` : '<p class="text-sm text-gray-500 border-t pt-4">Maximum seeds reached (3/3). Remove a seed to add a new one.</p>'}
+                        </div>
+
+                        <!-- Example Seeds -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h4 class="text-sm font-medium text-blue-900 mb-2">💡 Example Seeds</h4>
+                            <div class="text-sm text-blue-700 space-y-1">
+                                <p>• "transformer models" or "attention mechanisms"</p>
+                                <p>• "quantum computing" or "quantum error correction"</p>
+                                <p>• "CRISPR gene editing" or "synthetic biology"</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Store current seeds globally for add/remove functions
+                window.currentSeeds = seeds;
+
+            } catch (error) {
+                console.error('Error loading seeds:', error);
+                container.innerHTML = `
+                    <div class="text-center py-12 text-red-600">
+                        <p>Failed to load seeds. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Add seed
+        async function addSeed() {
+            const input = document.getElementById('new-seed-input');
+            const newSeed = input.value.trim();
+
+            if (!newSeed) {
+                alert('Please enter a seed topic');
+                return;
+            }
+
+            if (window.currentSeeds.length >= 3) {
+                alert('Maximum 3 seeds allowed for free tier');
+                return;
+            }
+
+            try {
+                const updatedSeeds = [...window.currentSeeds, newSeed];
+                const response = await fetch(`${API_BASE}/seeds`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ items: updatedSeeds })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add seed');
+                }
+
+                // Reload seeds interface
+                loadSeedsInterface();
+            } catch (error) {
+                console.error('Error adding seed:', error);
+                alert('Failed to add seed. Please try again.');
+            }
+        }
+
+        // Remove seed
+        async function removeSeed(index) {
+            if (!confirm('Remove this seed?')) {
+                return;
+            }
+
+            try {
+                const updatedSeeds = window.currentSeeds.filter((_, idx) => idx !== index);
+                const response = await fetch(`${API_BASE}/seeds`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ items: updatedSeeds })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to remove seed');
+                }
+
+                // Reload seeds interface
+                loadSeedsInterface();
+            } catch (error) {
+                console.error('Error removing seed:', error);
+                alert('Failed to remove seed. Please try again.');
+            }
+        }
+
+        function loadSavedPapers() {
+            document.getElementById('saved-content').innerHTML = `
+                <div class="text-center py-12 text-gray-500">
+                    <p>Saved papers coming soon...</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

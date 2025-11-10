@@ -6,6 +6,7 @@ Initializes Flask app with Firebase Admin SDK and registers blueprints.
 
 import os
 from flask import Flask
+from flask_cors import CORS
 import firebase_admin
 from firebase_admin import credentials, firestore
 from google.cloud import pubsub_v1
@@ -31,6 +32,24 @@ def create_app():
     # Load configuration from environment
     app.config['PROJECT_ID'] = os.getenv('GOOGLE_CLOUD_PROJECT', 'research-watcher')
     app.config['DEBUG'] = os.getenv('FLASK_ENV', 'production') == 'development'
+
+    # Configure CORS
+    # Allow Firebase Hosting, Cloud Storage, and localhost for development
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": [
+                "https://research-watcher-491582996945.web.app",
+                "https://research-watcher-491582996945.firebaseapp.com",
+                "https://storage.googleapis.com",
+                "http://localhost:5000",
+                "http://localhost:8080",
+                "http://127.0.0.1:5000"
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True
+        }
+    })
 
     # Initialize Firebase Admin SDK
     if not firebase_admin._apps:
@@ -58,13 +77,14 @@ def create_app():
     app.pubsub_topic = f"projects/{app.config['PROJECT_ID']}/topics/rw-wal"
 
     # Register blueprints
-    from app.api import users, seeds, digest, collector, feedback
+    from app.api import users, seeds, digest, collector, feedback, search
 
     app.register_blueprint(users.bp, url_prefix='/api')
     app.register_blueprint(seeds.bp, url_prefix='/api')
     app.register_blueprint(digest.bp, url_prefix='/api')
     app.register_blueprint(collector.bp, url_prefix='/api/collect')
     app.register_blueprint(feedback.bp, url_prefix='/api')
+    app.register_blueprint(search.bp)
 
     # Health check endpoint
     @app.route('/')
