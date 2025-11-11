@@ -255,10 +255,10 @@ bq query --project_id=research-watcher-491582996945 \
 
 ---
 
-## Phase 3: Frontend & User Flow ✅
+## Phase 3: Frontend & User Flow + Firebase Hosting ✅
 
 **Status**: COMPLETE (2025-11-11)
-**Goal**: Interactive web UI with sign-in, seed management, digest view, and real-time search
+**Goal**: Interactive web UI with sign-in, seed management, digest view, real-time search, and professional Firebase Hosting
 
 ### Tasks
 - [x] Create landing page (`public/index.html`)
@@ -323,14 +323,23 @@ bq query --project_id=research-watcher-491582996945 \
   - [x] Allow localhost for development
   - [x] Credentials support for auth headers
 - [x] Deploy frontend
-  - [x] Using Cloud Storage static hosting (Firebase CLI not installed)
-  - [x] Cache-busting headers configured
-  - [x] All pages deployed (index, app, about, privacy, signout)
+  - [x] Migrated from Cloud Storage to Firebase Hosting
+  - [x] Firebase CLI installed (v14.24.2)
+  - [x] Service account granted Firebase Develop Admin role
+  - [x] Deployed to https://research-watcher.web.app
+  - [x] Cloud Run API rewrites configured in firebase.json
+  - [x] All pages deployed (index.html, app.html, signout.html)
 - [x] Add quota UI display
   - [x] Account tier display
   - [x] Seeds usage (X / Y format)
   - [x] Runs per day limit
   - [x] Visual quota card in Seeds tab
+- [x] Setup Firebase Hosting with custom domain
+  - [x] Deployed to Firebase Hosting
+  - [x] Default URL working: https://research-watcher.web.app
+  - [x] Custom domain configured: app.researchwatcher.org
+  - [x] DNS records added (A records + TXT verification)
+  - [x] Waiting for SSL certificate provisioning (1-24 hours)
 
 ### Deliverables
 - ✅ Usable public web app with modern UI
@@ -340,6 +349,8 @@ bq query --project_id=research-watcher-491582996945 \
 - ✅ Interactive search feature (real-time paper discovery)
 - ✅ Saved papers reading list
 - ✅ Quota limits displayed
+- ✅ Firebase Hosting deployment with Cloud Run backend proxy
+- ✅ Custom domain configured (app.researchwatcher.org)
 - ✅ Git tag: `v0-frontend`
 
 ### Validation
@@ -355,7 +366,10 @@ bq query --project_id=research-watcher-491582996945 \
 - [x] Token audience mismatch resolved
 
 ### Key Decisions
-- **Frontend Hosting**: Using Cloud Storage instead of Firebase Hosting (CLI not installed, deferred)
+- **Frontend Hosting**: Migrated to Firebase Hosting with custom domain
+  - Service account authentication (Firebase Develop Admin role)
+  - Automatic Cloud Run backend proxy via rewrites
+  - Custom domain: app.researchwatcher.org (researchwatcher.org purchased)
 - **UI Framework**: HTMX + Tailwind CSS (minimal JS, fast, responsive)
 - **Search Feature**: Added interactive search alongside daily digest (expanded from original plan)
 - **Saved Papers**: Implemented as Firestore subcollection instead of feedback-only approach

@@ -20,12 +20,14 @@ This project is built on a modern, serverless-first stack using Python, Flask, a
   - Dual-write architecture (Firestore + WAL)
   - 36 bash tests + 30 pytest tests passing
 
-- ✅ **Phase 3**: Interactive Frontend (Complete)
+- ✅ **Phase 3**: Interactive Frontend + Firebase Hosting (Complete)
   - HTMX-based frontend with Tailwind CSS
   - Firebase Auth integration
   - Paper browsing and search
   - Saved papers functionality
-  - Deployed at: https://rw-api-491582996945.us-central1.run.app
+  - Firebase Hosting with Cloud Run backend integration
+  - Production URL: https://research-watcher.web.app
+  - Custom domain: app.researchwatcher.org (DNS configured, SSL pending)
 
 - 📋 **Next: Enhanced Discovery (Phases 1-5)**
   - **Phase 1**: OpenAlex topic infrastructure (~500 psychology topics)
@@ -77,10 +79,10 @@ This repository is organized and developed following clear specifications and im
 *   **Events:** Google Cloud Pub/Sub - Write-Ahead Log (WAL)
 
 ### Application Stack
-*   **Backend:** Python 3.11 + Flask
+*   **Backend:** Python 3.11 + Flask (Cloud Run)
 *   **Frontend:** HTMX + Tailwind CSS (server-rendered)
-*   **Authentication:** Firebase Authentication (Google & Email/Password)
-*   **Hosting:** Firebase Hosting (static assets) + Cloud Run (API)
+*   **Authentication:** Firebase Authentication (Google Sign-In)
+*   **Hosting:** Firebase Hosting with automatic Cloud Run proxy for `/api/**`
 
 ### External APIs
 *   **OpenAlex:** Primary paper source (~250M papers, free API)
@@ -159,6 +161,35 @@ This project is configured to run in a Nix-based environment managed by Firebase
     # API client tests
     python scripts/test_api_clients.py
     ```
+
+## Deployment
+
+### Frontend (Firebase Hosting)
+
+```bash
+# Deploy frontend to Firebase Hosting
+export GOOGLE_APPLICATION_CREDENTIALS="./serviceAccountKey.json"
+npx firebase deploy --only hosting --project research-watcher
+```
+
+**Production URLs:**
+- Primary: https://research-watcher.web.app
+- Custom domain: https://app.researchwatcher.org (when SSL active)
+
+### Backend (Cloud Run)
+
+```bash
+# Build and deploy to Cloud Run
+gcloud builds submit --tag gcr.io/research-watcher/rw-api
+gcloud run deploy rw-api \
+  --image gcr.io/research-watcher/rw-api \
+  --region us-central1 \
+  --platform managed
+```
+
+**Backend URL:** https://rw-api-491582996945.us-central1.run.app
+
+**Note:** Firebase Hosting automatically proxies `/api/**` requests to Cloud Run.
 
 ## Key Concepts for AI Agents
 
