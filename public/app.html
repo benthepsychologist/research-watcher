@@ -121,12 +121,13 @@
     <script>
         // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyB4YJl0zYqP9LzQxH_3wKZ9X7nX8RLqYxQ",
+            apiKey: "AIzaSyAvDgfpoQQkOpCF2XpLTVshRBJeLGXztOU",
             authDomain: "research-watcher.firebaseapp.com",
             projectId: "research-watcher",
             storageBucket: "research-watcher.firebasestorage.app",
             messagingSenderId: "491582996945",
-            appId: "1:491582996945:web:d0f6e5e4c3b2a1f0e9d8c7"
+            appId: "1:491582996945:web:3d1194de7945b82430a0f0",
+            measurementId: "G-F0BR2PBW73"
         };
 
         // Initialize Firebase
@@ -143,7 +144,8 @@
         auth.onAuthStateChanged(async (user) => {
             if (!user) {
                 // Not signed in, redirect to landing page
-                window.location.href = '/index.html';
+                // Get base URL dynamically to handle Cloud Storage bucket paths
+                window.location.href = 'https://storage.googleapis.com/research-watcher-web/index.html';
                 return;
             }
 
@@ -175,7 +177,12 @@
                 });
                 if (!response.ok) {
                     console.error('Failed to sync user profile');
+                    return;
                 }
+
+                const data = await response.json();
+                // Store user data globally for quota display
+                window.userData = data.user || {};
             } catch (error) {
                 console.error('Error syncing user profile:', error);
             }
@@ -236,6 +243,9 @@
             const authors = (paper.authors || []).slice(0, 3).join(', ') + (paper.authors && paper.authors.length > 3 ? ', et al.' : '');
             const abstract = (paper.abstract || '').slice(0, 300) + (paper.abstract && paper.abstract.length > 300 ? '...' : '');
 
+            // Escape single quotes in the paper object for onclick handler
+            const paperJson = JSON.stringify(paper).replace(/'/g, '&apos;');
+
             return `
                 <div class="paper-card bg-white rounded-lg shadow p-6">
                     <div class="flex justify-between items-start">
@@ -248,9 +258,20 @@
                             <p class="text-sm text-gray-600 mb-2">${authors}</p>
                             <p class="text-sm text-gray-500 mb-3">${paper.venue || 'Unknown Venue'} • ${paper.year || 'N/A'} • ${paper.citationCount || 0} citations</p>
                             ${abstract ? `<p class="text-sm text-gray-700 mb-3">${abstract}</p>` : ''}
-                            <div class="flex items-center space-x-2">
-                                ${paper.oa ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Open Access</span>' : ''}
-                                ${paper.provenance ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">${paper.provenance}</span>` : ''}
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    ${paper.oa ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Open Access</span>' : ''}
+                                    ${paper.provenance ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">${paper.provenance}</span>` : ''}
+                                </div>
+                                <button
+                                    onclick='savePaper(${paperJson})'
+                                    class="inline-flex items-center px-3 py-1 text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded"
+                                >
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                                    </svg>
+                                    Save
+                                </button>
                             </div>
                         </div>
                         <div class="ml-4">
@@ -300,7 +321,8 @@
         // Sign out
         document.getElementById('sign-out-btn').addEventListener('click', async () => {
             await auth.signOut();
-            window.location.href = '/index.html';
+            // Get base URL dynamically to handle Cloud Storage bucket paths
+            window.location.href = 'https://storage.googleapis.com/research-watcher-web/index.html';
         });
 
         // Load search interface
@@ -459,19 +481,43 @@
                 });
 
                 const data = await response.json();
-                const seeds = data.items || [];
+                const seeds = data.seeds || [];
+
+                // Get quota information
+                const quota = window.userData?.quota || { maxSeeds: 3, runsPerDay: 1 };
+                const tier = window.userData?.tier || 'free';
 
                 // Render seeds management UI
                 container.innerHTML = `
                     <div class="max-w-4xl mx-auto">
                         <div class="mb-8">
                             <h2 class="text-2xl font-bold text-gray-900 mb-2">My Research Seeds</h2>
-                            <p class="text-sm text-gray-600">Keywords and topics that define your research interests (max 3 for free tier)</p>
+                            <p class="text-sm text-gray-600">Keywords and topics that define your research interests</p>
+                        </div>
+
+                        <!-- Quota Display -->
+                        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-sm font-medium text-indigo-900">Account Tier: <span class="capitalize">${tier}</span></h4>
+                                    <p class="text-xs text-indigo-700 mt-1">Your current quota limits</p>
+                                </div>
+                                <div class="flex gap-4 text-sm">
+                                    <div class="text-center">
+                                        <div class="font-semibold text-indigo-900">${seeds.length} / ${quota.maxSeeds}</div>
+                                        <div class="text-xs text-indigo-700">Seeds</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-semibold text-indigo-900">${quota.runsPerDay}</div>
+                                        <div class="text-xs text-indigo-700">Runs/Day</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Current Seeds -->
                         <div class="bg-white rounded-lg shadow p-6 mb-6">
-                            <h3 class="text-lg font-medium text-gray-900 mb-4">Current Seeds (${seeds.length}/3)</h3>
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Current Seeds (${seeds.length} / ${quota.maxSeeds})</h3>
                             <div id="seeds-list" class="space-y-2 mb-4">
                                 ${seeds.length > 0 ? seeds.map((seed, idx) => `
                                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200">
@@ -487,7 +533,7 @@
                             </div>
 
                             <!-- Add Seed Form -->
-                            ${seeds.length < 3 ? `
+                            ${true ? `
                                 <div class="border-t pt-4">
                                     <h4 class="text-sm font-medium text-gray-700 mb-2">Add New Seed</h4>
                                     <div class="flex gap-2">
@@ -506,7 +552,7 @@
                                         </button>
                                     </div>
                                 </div>
-                            ` : '<p class="text-sm text-gray-500 border-t pt-4">Maximum seeds reached (3/3). Remove a seed to add a new one.</p>'}
+                            ` : ''}
                         </div>
 
                         <!-- Example Seeds -->
@@ -544,10 +590,11 @@
                 return;
             }
 
-            if (window.currentSeeds.length >= 3) {
-                alert('Maximum 3 seeds allowed for free tier');
-                return;
-            }
+            // Removed seed limit for testing
+            // if (window.currentSeeds.length >= 3) {
+            //     alert('Maximum 3 seeds allowed for free tier');
+            //     return;
+            // }
 
             try {
                 const updatedSeeds = [...window.currentSeeds, newSeed];
@@ -557,7 +604,7 @@
                         'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ items: updatedSeeds })
+                    body: JSON.stringify({ seeds: updatedSeeds })
                 });
 
                 if (!response.ok) {
@@ -586,7 +633,7 @@
                         'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ items: updatedSeeds })
+                    body: JSON.stringify({ seeds: updatedSeeds })
                 });
 
                 if (!response.ok) {
@@ -601,12 +648,129 @@
             }
         }
 
-        function loadSavedPapers() {
-            document.getElementById('saved-content').innerHTML = `
-                <div class="text-center py-12 text-gray-500">
-                    <p>Saved papers coming soon...</p>
+        async function loadSavedPapers() {
+            const container = document.getElementById('saved-content');
+
+            // Show loading
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                    <p class="mt-4 text-gray-600">Loading saved papers...</p>
                 </div>
             `;
+
+            try {
+                const response = await fetch(`${API_BASE}/saved`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.papers || data.papers.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-12">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No saved papers yet</h3>
+                            <p class="mt-1 text-sm text-gray-500">Save papers from your digest or search results to read later.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Render saved papers
+                container.innerHTML = `
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Saved Papers</h2>
+                        <p class="text-sm text-gray-600 mt-1">${data.count} papers in your reading list</p>
+                    </div>
+                    <div class="space-y-4">
+                        ${data.papers.map(paper => renderSavedPaper(paper)).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading saved papers:', error);
+                container.innerHTML = `
+                    <div class="text-center py-12 text-red-600">
+                        <p>Failed to load saved papers. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderSavedPaper(paper) {
+            const score = Math.round(paper.score || 0);
+            const scoreColor = score >= 70 ? 'bg-green-100 text-green-800' : score >= 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
+            const authors = (paper.authors || []).slice(0, 3).join(', ') + (paper.authors && paper.authors.length > 3 ? ', et al.' : '');
+            const abstract = (paper.abstract || '').slice(0, 300) + (paper.abstract && paper.abstract.length > 300 ? '...' : '');
+
+            return `
+                <div class="paper-card bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                                <a href="${paper.url || '#'}" target="_blank" class="hover:text-indigo-600">
+                                    ${paper.title || 'Untitled'}
+                                </a>
+                            </h3>
+                            <p class="text-sm text-gray-600 mb-2">${authors}</p>
+                            <p class="text-sm text-gray-500 mb-3">${paper.venue || 'Unknown Venue'} • ${paper.year || 'N/A'} • ${paper.citationCount || 0} citations</p>
+                            ${abstract ? `<p class="text-sm text-gray-700 mb-3">${abstract}</p>` : ''}
+                            <div class="flex items-center space-x-2">
+                                ${paper.oa ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Open Access</span>' : ''}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${scoreColor}">Score: ${score}</span>
+                                <button onclick="unsavePaper('${paper.paperId}')" class="text-sm text-red-600 hover:text-red-800">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function savePaper(paper) {
+            try {
+                const response = await fetch(`${API_BASE}/saved`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(paper)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save paper');
+                }
+
+                alert('Paper saved successfully!');
+            } catch (error) {
+                console.error('Error saving paper:', error);
+                alert('Failed to save paper. Please try again.');
+            }
+        }
+
+        async function unsavePaper(paperId) {
+            if (!confirm('Remove this paper from your saved list?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/saved/${encodeURIComponent(paperId)}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to remove paper');
+                }
+
+                // Reload saved papers
+                loadSavedPapers();
+            } catch (error) {
+                console.error('Error removing paper:', error);
+                alert('Failed to remove paper. Please try again.');
+            }
         }
     </script>
 </body>

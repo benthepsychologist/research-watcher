@@ -77,7 +77,7 @@ def create_app():
     app.pubsub_topic = f"projects/{app.config['PROJECT_ID']}/topics/rw-wal"
 
     # Register blueprints
-    from app.api import users, seeds, digest, collector, feedback, search
+    from app.api import users, seeds, digest, collector, feedback, search, saved
 
     app.register_blueprint(users.bp, url_prefix='/api')
     app.register_blueprint(seeds.bp, url_prefix='/api')
@@ -85,6 +85,7 @@ def create_app():
     app.register_blueprint(collector.bp, url_prefix='/api/collect')
     app.register_blueprint(feedback.bp, url_prefix='/api')
     app.register_blueprint(search.bp)
+    app.register_blueprint(saved.bp, url_prefix='/api')
 
     # Health check endpoint
     @app.route('/')

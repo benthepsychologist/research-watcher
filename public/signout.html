@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Out - Research Watcher</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <h1>Signing you out...</h1>
+    <p id="status">Please wait...</p>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvDgfpoQQkOpCF2XpLTVshRBJeLGXztOU",
+            authDomain: "research-watcher.firebaseapp.com",
+            projectId: "research-watcher",
+            storageBucket: "research-watcher.firebasestorage.app",
+            messagingSenderId: "491582996945",
+            appId: "1:491582996945:web:3d1194de7945b82430a0f0",
+            measurementId: "G-F0BR2PBW73"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        auth.signOut().then(() => {
+            document.getElementById('status').innerHTML = 'Signed out successfully! <br><br><a href="https://storage.googleapis.com/research-watcher-web/index.html">Go to landing page</a>';
+        }).catch((error) => {
+            document.getElementById('status').innerHTML = 'Error: ' + error.message;
+        });
+    </script>
+</body>
+</html>

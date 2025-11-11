@@ -1,10 +1,10 @@
 # Research Watcher - Development Milestones
 
 **Project**: Research Watcher v0
-**Based on**: AIP 1.0 & Spec 1.0
-**Status**: 🟡 In Progress
-**Current Phase**: Phase 1 → Phase 2
-**Last Updated**: 2025-11-06
+**Based on**: AIP 1.1 & Spec 1.0
+**Status**: 🟢 Phase 3 Complete
+**Current Phase**: Phase 3 → Phase 4 (Infra Upgrade Spec)
+**Last Updated**: 2025-11-11
 
 ---
 
@@ -15,7 +15,7 @@
 | 0 | Bootstrap & Environment | ✅ | 2025-11-06 |
 | 1 | Backend Core (API Skeleton) | ✅ | 2025-11-06 |
 | 2 | Collector + Dual-Write | ✅ | 2025-11-08 |
-| 3 | Frontend & User Flow | ⏳ | - |
+| 3 | Frontend & User Flow | ✅ | 2025-11-11 |
 | 4 | Event Ledger & Consumer Stub | ⏳ | - |
 | 5 | v1 Fan-Out Readiness | ⏳ | - |
 | 6 | Agentic Extensions (Optional) | ⏳ | - |
@@ -255,76 +255,125 @@ bq query --project_id=research-watcher-491582996945 \
 
 ---
 
-## Phase 3: Frontend & User Flow
+## Phase 3: Frontend & User Flow ✅
 
-**Goal**: Minimal web UI for sign-in, seed entry, and digest view
+**Status**: COMPLETE (2025-11-11)
+**Goal**: Interactive web UI with sign-in, seed management, digest view, and real-time search
 
 ### Tasks
-- [ ] Create landing page (`public/index.html`)
-  - [ ] Project description
-  - [ ] Sign-in button
-  - [ ] Links to About and Privacy pages
-- [ ] Create authenticated app page (`public/app.html`)
-  - [ ] Firebase Auth UI integration
-  - [ ] Seed management form
-  - [ ] Digest viewer with paper cards
-  - [ ] Feedback buttons (save/mute/click)
-- [ ] Create about page (`public/about.html`)
-  - [ ] Project description
-  - [ ] Technology stack
-  - [ ] Contact information
-- [ ] Create privacy policy page (`public/privacy.html`)
-  - [ ] Data collection policy
-  - [ ] User rights
-  - [ ] Compliance statements
-- [ ] Implement Firebase Auth flow
-  - [ ] Google sign-in
-  - [ ] Email/Password sign-in
-  - [ ] Auto-redirect after login
-  - [ ] Call `/api/users/sync` on first login
-- [ ] Implement seed management UI
-  - [ ] Add/remove authors
-  - [ ] Add/remove venues
-  - [ ] Add/remove keywords
-  - [ ] Show quota limits
-  - [ ] Save button → POST `/api/seeds`
-- [ ] Implement digest viewer
-  - [ ] Fetch from `/api/digest/latest`
-  - [ ] Render paper cards with:
-    - [ ] Title, authors, venue, year
-    - [ ] Abstract (truncated)
-    - [ ] Score badge
-    - [ ] Open Access indicator
-    - [ ] Link to source
-  - [ ] Sort by score
-  - [ ] Show "no digest yet" state
-- [ ] Add feedback buttons
-  - [ ] Save for later
-  - [ ] Mute/hide
-  - [ ] Track clicks to source
-  - [ ] POST to `/api/feedback`
-- [ ] Configure CORS in Flask
-  - [ ] Allow Firebase Hosting domain
-  - [ ] Allow localhost for dev
-- [ ] Update `firebase.json`
-  - [ ] Rewrite `/api/**` to Cloud Run
-  - [ ] Serve static files from `public/`
-  - [ ] Configure cache headers
-- [ ] Deploy to Firebase Hosting
+- [x] Create landing page (`public/index.html`)
+  - [x] Project description
+  - [x] Firebase Auth integration (Google Sign-In)
+  - [x] Auto-redirect to app after authentication
+  - [x] Links to About and Privacy pages
+- [x] Create authenticated app page (`public/app.html`)
+  - [x] HTMX-powered SPA with Firebase Auth
+  - [x] Tailwind CSS styling
+  - [x] Tab-based navigation: Digest | Search | Seeds | Saved
+  - [x] Token-based API authentication
+- [x] Create about page (`public/about.html`)
+  - [x] Project description and mission
+  - [x] Technology stack overview
+  - [x] Contact information
+- [x] Create privacy policy page (`public/privacy.html`)
+  - [x] Data collection policy
+  - [x] User rights and consent
+  - [x] Third-party services disclosure
+- [x] Implement Firebase Auth flow
+  - [x] Google sign-in popup
+  - [x] Session persistence via `onAuthStateChanged`
+  - [x] Auto-redirect after login to `app.html`
+  - [x] Token stored in `localStorage`
+  - [x] Call `/api/users/sync` on authentication
+  - [x] Sign-out page (`public/signout.html`)
+- [x] Implement seed management UI
+  - [x] Add/remove research topic keywords
+  - [x] Quota display (seeds limit, runs per day)
+  - [x] Real-time seed count tracking
+  - [x] Example seeds for guidance
+  - [x] Backend validation enforced
+- [x] Implement digest viewer
+  - [x] Fetch from `/api/digest/latest` on page load
+  - [x] Render paper cards with:
+    - [x] Title, authors, venue, year
+    - [x] Abstract (truncated to 300 chars)
+    - [x] Score badge with color coding
+    - [x] Open Access indicator
+    - [x] Provenance badges (OpenAlex/S2/arXiv)
+    - [x] Clickable links to paper sources
+    - [x] Save button on each card
+  - [x] Sort by score descending
+  - [x] Show "no digest yet" empty state
+- [x] Implement interactive search
+  - [x] Real-time search endpoint (`/api/search`)
+  - [x] Search form with query input
+  - [x] Configurable filters: days back, max results
+  - [x] Loading state during search
+  - [x] Results rendered as paper cards
+  - [x] Client-side rate limiting (1 req/sec for S2 compliance)
+- [x] Implement saved papers functionality
+  - [x] Backend API endpoints (GET/POST/DELETE `/api/saved`)
+  - [x] Save button on digest and search paper cards
+  - [x] Saved papers tab with reading list
+  - [x] Remove button on saved papers
+  - [x] Firestore subcollection storage
+- [x] Configure CORS in Flask
+  - [x] Allow Cloud Storage domain
+  - [x] Allow Firebase Hosting domains
+  - [x] Allow localhost for development
+  - [x] Credentials support for auth headers
+- [x] Deploy frontend
+  - [x] Using Cloud Storage static hosting (Firebase CLI not installed)
+  - [x] Cache-busting headers configured
+  - [x] All pages deployed (index, app, about, privacy, signout)
+- [x] Add quota UI display
+  - [x] Account tier display
+  - [x] Seeds usage (X / Y format)
+  - [x] Runs per day limit
+  - [x] Visual quota card in Seeds tab
 
 ### Deliverables
-- ✅ Usable public web app
-- ✅ Auth flow working
-- ✅ Functional backend integration
-- ✅ Responsive design (mobile-friendly)
+- ✅ Usable public web app with modern UI
+- ✅ Firebase Auth flow working (Google Sign-In)
+- ✅ Functional backend integration (all endpoints working)
+- ✅ Responsive design (Tailwind CSS, mobile-friendly)
+- ✅ Interactive search feature (real-time paper discovery)
+- ✅ Saved papers reading list
+- ✅ Quota limits displayed
 - ✅ Git tag: `v0-frontend`
 
 ### Validation
-- [ ] Can sign in with Google
-- [ ] Can add/update seeds
-- [ ] Can view digest
-- [ ] Can save/mute papers
-- [ ] All links work
+- [x] Can sign in with Google
+- [x] Can add/update/remove seeds
+- [x] Can view daily digest
+- [x] Can search papers in real-time
+- [x] Can save papers to reading list
+- [x] Can remove saved papers
+- [x] Quota limits displayed correctly
+- [x] All tabs functional
+- [x] API authentication working
+- [x] Token audience mismatch resolved
+
+### Key Decisions
+- **Frontend Hosting**: Using Cloud Storage instead of Firebase Hosting (CLI not installed, deferred)
+- **UI Framework**: HTMX + Tailwind CSS (minimal JS, fast, responsive)
+- **Search Feature**: Added interactive search alongside daily digest (expanded from original plan)
+- **Saved Papers**: Implemented as Firestore subcollection instead of feedback-only approach
+- **Quota Display**: Shows limits even though high for testing (supports future tier management)
+- **Auth Method**: Google Sign-In only (email/password deferred for simplicity)
+
+### Documentation Created
+- [x] `docs/E2E_TESTING_CHECKLIST.md` - Comprehensive testing guide
+- [x] `docs/FIREBASE_AUTH_SETUP.md` - Firebase Auth configuration steps
+- [x] `docs/QUICK_START_GUIDE.md` - Quick start for new developers
+- [x] `scripts/test_e2e_auth.sh` - Automated API testing script
+
+### Bugs Fixed
+- [x] Firebase API key validation
+- [x] Token audience mismatch (`research-watcher` vs `research-watcher-491582996945`)
+- [x] URL redirect losing bucket path in Cloud Storage
+- [x] Seeds API field name mismatch (`items` vs `seeds`)
+- [x] Browser cache issues with old JavaScript
 
 ---
 

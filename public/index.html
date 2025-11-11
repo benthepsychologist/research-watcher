@@ -133,7 +133,7 @@
                 <li>Free to use with Google or email sign-in</li>
             </ul>
 
-            <a href="/app.html" class="cta-button">Get Started</a>
+            <button id="sign-in-btn" class="cta-button" style="border: none; cursor: pointer;">Get Started</button>
 
             <div class="status">
                 <strong>Status:</strong> Limited Alpha! Phase 2 complete - collector and search are live.
@@ -151,5 +151,47 @@
             Built with Python, Flask, Firebase, and Google Cloud Platform
         </p>
     </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvDgfpoQQkOpCF2XpLTVshRBJeLGXztOU",
+            authDomain: "research-watcher.firebaseapp.com",
+            projectId: "research-watcher",
+            storageBucket: "research-watcher.firebasestorage.app",
+            messagingSenderId: "491582996945",
+            appId: "1:491582996945:web:3d1194de7945b82430a0f0",
+            measurementId: "G-F0BR2PBW73"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // Check if user is already signed in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // User is signed in, redirect to app
+                window.location = 'https://storage.googleapis.com/research-watcher-web/app.html';
+            }
+        });
+
+        // Sign in button handler
+        document.getElementById('sign-in-btn').addEventListener('click', async () => {
+            try {
+                // Use Google Sign-In
+                const provider = new firebase.auth.GoogleAuthProvider();
+                await auth.signInWithPopup(provider);
+                // Redirect happens automatically via onAuthStateChanged
+            } catch (error) {
+                console.error('Sign-in error:', error);
+                alert('Sign-in failed: ' + error.message);
+            }
+        });
+    </script>
 </body>
 </html>
