@@ -33,10 +33,16 @@ This project is built on a modern, serverless-first stack using Python, Flask, a
   - 1,487 Social Sciences topics cached in Firestore (144 Psychology topics)
   - Topics API with 6 endpoints: list, detail, search, fields, stats, hierarchy
   - Hierarchical topic structure: Domain → Field → Subfield → Topic
-  - Ready for frontend browsing UI
 
-- 📋 **Next: Enhanced Discovery (Phases 2-5)**
-  - **Phase 2**: Topic browsing UI (tree view, detail panels)
+- ✅ **Phase 2 (Enhanced Discovery)**: Topic Browsing UI (Complete)
+  - Interactive Topics tab in frontend with field-wide discovery
+  - Search topics by keyword with real-time results
+  - Filter by field (Psychology, Economics, Arts, etc.)
+  - Topic detail panels showing hierarchy, stats, keywords, and descriptions
+  - Defaults to Psychology topics (144 topics) on load
+  - Deployed at https://research-watcher.web.app
+
+- 📋 **Next: Enhanced Discovery (Phases 3-5)**
   - **Phase 3**: Research Networks (CRUD boundaries with versioning) ← **Killer Feature**
   - **Phase 4**: Citation & author networks (graph exploration)
   - **Phase 5**: Contextual search (scoped by topic/network/author)
