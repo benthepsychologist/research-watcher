@@ -1,55 +1,136 @@
 # Research Watcher
 
+**Stay up to date. Stay engaged. Stay curious.**
+
 ## Overview
 
-Research Watcher is a public-facing research-intelligence web application. It delivers ranked, daily digests of academic papers based on user interests (authors, venues, keywords). This project is built on a modern, serverless-first stack using Python, Flask, and Google Cloud Platform.
+Research Watcher is a field-wide discovery platform for academic research. It transforms how researchers explore their discipline - from browsing topic maps and citation networks to defining custom research boundaries and tracking emerging areas. Built for psychologists and researchers who want to see "ALL of it" - not just filtered results.
 
-The core architecture is designed to be scalable and maintainable, starting with a simple dual-write system and providing a clear path to a fully event-sourced model.
+This project is built on a modern, serverless-first stack using Python, Flask, and Google Cloud Platform. The core architecture is designed to be scalable and maintainable, starting with a simple dual-write system and providing a clear path to a fully event-sourced model.
 
 ## Current Status
 
-- ✅ **Phase 0**: Bootstrap & Environment (Complete)
-  - GCP infrastructure deployed
-  - Firebase/Firestore configured
-  - Cloud Run, Pub/Sub, BigQuery operational
+**v0.3 - Enhanced Discovery Architecture (In Progress)**
+
+- ✅ **Phase 0-2**: Foundation Complete
+  - GCP infrastructure (Cloud Run, Firestore, BigQuery, Pub/Sub)
+  - Flask API with authentication
+  - External API clients (OpenAlex, Semantic Scholar, arXiv)
+  - Paper collection, deduplication, scoring
+  - Dual-write architecture (Firestore + WAL)
   - 36 bash tests + 30 pytest tests passing
 
-- ✅ **Phase 1**: Backend Core (API Skeleton) (Complete)
-  - Flask app factory with Firebase Admin SDK
-  - Authentication system (@login_required decorator)
-  - All API blueprints implemented (users, seeds, digest, collector, feedback)
-  - Deployed to Cloud Run: https://rw-api-491582996945.us-central1.run.app
-  - 16 API integration tests written
+- ✅ **Phase 3**: Interactive Frontend (Complete)
+  - HTMX-based frontend with Tailwind CSS
+  - Firebase Auth integration
+  - Paper browsing and search
+  - Saved papers functionality
+  - Deployed at: https://rw-api-491582996945.us-central1.run.app
 
-- ✅ **Phase 2**: Collector + Dual-Write (Complete)
-  - External API clients (OpenAlex, Semantic Scholar, arXiv)
-  - Paper deduplication and scoring algorithm (0-100 scale)
-  - Full collector endpoint with dual-write (Firestore + Pub/Sub WAL)
-  - End-to-end tested: 49 papers collected, WAL events in BigQuery
-  - Test scripts: test_api_clients.py (5/5 passing), create_test_user.py
+- 📋 **Next: Enhanced Discovery (Phases 1-5)**
+  - **Phase 1**: OpenAlex topic infrastructure (~500 psychology topics)
+  - **Phase 2**: Topic browsing UI (tree view, detail panels)
+  - **Phase 3**: Research Networks (CRUD boundaries with versioning) ← **Killer Feature**
+  - **Phase 4**: Citation & author networks (graph exploration)
+  - **Phase 5**: Contextual search (scoped by topic/network/author)
 
-- ⏳ **Phase 3**: Frontend & User Flow (Next)
-  - Firebase Auth UI integration
-  - Seed management interface
-  - Digest viewer with paper cards
-  - User feedback tracking
+See [Enhanced Discovery Spec](./.specwright/specs/enhanced-discovery-spec.md) for full details.
 
 ## Key Documents
 
-This repository is organized and developed following a clear specification and an agent-driven implementation plan. All developers, human or AI, should familiarize themselves with these documents before contributing.
+This repository is organized and developed following clear specifications and implementation plans. All developers, human or AI, should familiarize themselves with these documents before contributing.
 
-*   **[Project Specification](./docs/spec.md):** The canonical source of truth for the project's architecture, data models, and features (Spec v1.0).
-*   **[Implementation Plan](./docs/AIP.md):** The step-by-step plan for building, deploying, and evolving the application (AIP v1.0).
+### Specifications
+
+*   **[Enhanced Discovery Spec](./.specwright/specs/enhanced-discovery-spec.md):** (v0.3) Field-wide discovery with topics, research networks, and citation graphs. **Current focus.**
+*   **[Infrastructure Upgrade Spec](./.specwright/specs/infra-upgrade-events-spec.md):** (v1.0) Event-sourced architecture evolution (Phases 4-6).
+*   **[Original Project Spec](./docs/spec.md):** (v1.0) Foundation architecture and seed-based digests.
+
+### Implementation Plans
+
+*   **[Agent Implementation Plan](./docs/AIP.md):** (v1.0) Phased development strategy for foundation (Phases 0-3).
+*   **[Milestones](./MILESTONES.md):** Development progress tracker.
+
+### Architecture Overview
+
+**Three-Layer Data Architecture:**
+1. **Firestore**: Network metadata, stats, user data (20ms reads)
+2. **BigQuery**: Paper storage, queries, analytics (300ms queries)
+3. **Cloud Storage**: Pre-computed exploration blobs for graph visualization (3-5s download, then instant)
+
+**Key Components:**
+- **Frontend**: HTMX + Tailwind CSS (server-rendered, minimal JS)
+- **Backend**: Flask + Firebase Admin SDK
+- **Data Sources**: OpenAlex (primary), Semantic Scholar (semantic), arXiv (preprints)
+- **Background Jobs**: Cloud Tasks + Cloud Scheduler
+- **Caching**: Firestore + Cloud Storage blobs
 
 ## Technology Stack
 
-*   **Backend:** Python 3 with the Flask micro-framework.
-*   **Hosting:** Google Cloud Run for the backend API and Firebase Hosting for the static frontend.
-*   **Database:** Firestore (Native Mode) for the primary application state.
-*   **Authentication:** Firebase Authentication (Google & Email/Password).
-*   **Event Bus:** Google Cloud Pub/Sub for a durable Write-Ahead Log (WAL).
-*   **Data Warehouse:** Google BigQuery for the permanent event ledger.
-*   **Scheduling:** Google Cloud Scheduler to trigger daily collection jobs.
+### Core Infrastructure (GCP)
+*   **Compute:** Google Cloud Run (serverless containers)
+*   **Database:** Firestore (Native Mode) - user data, network metadata
+*   **Data Warehouse:** Google BigQuery - paper storage, queries, analytics
+*   **Storage:** Cloud Storage - pre-computed exploration blobs
+*   **Queue:** Cloud Tasks - background job processing
+*   **Scheduler:** Cloud Scheduler - daily collection, refreshes
+*   **Events:** Google Cloud Pub/Sub - Write-Ahead Log (WAL)
+
+### Application Stack
+*   **Backend:** Python 3.11 + Flask
+*   **Frontend:** HTMX + Tailwind CSS (server-rendered)
+*   **Authentication:** Firebase Authentication (Google & Email/Password)
+*   **Hosting:** Firebase Hosting (static assets) + Cloud Run (API)
+
+### External APIs
+*   **OpenAlex:** Primary paper source (~250M papers, free API)
+*   **Semantic Scholar:** Semantic similarity and recommendations
+*   **arXiv:** Open-access preprints
+
+### Development Tools
+*   **Testing:** pytest (30+ tests), bash tests (36+ tests)
+*   **Environment:** Nix-based with Python virtual environment
+*   **Deployment:** gcloud CLI + Firebase CLI
+
+## Repository Structure
+
+```
+research-watcher/
+├── app/                      # Flask application
+│   ├── __init__.py          # App factory
+│   ├── api/                 # API blueprints
+│   │   ├── users.py         # User management
+│   │   ├── seeds.py         # Interest seeds (topics, authors, venues)
+│   │   ├── digest.py        # Paper digests
+│   │   ├── search.py        # Paper search
+│   │   ├── collector.py     # Background paper collection
+│   │   └── feedback.py      # User feedback
+│   └── services/            # Business logic
+│       ├── collector.py     # Paper collection + deduplication
+│       ├── openalex_client.py    # OpenAlex API client
+│       ├── semantic_scholar.py   # Semantic Scholar client
+│       └── arxiv_client.py       # arXiv client
+├── public/                  # Frontend (HTMX + Tailwind)
+│   ├── index.html          # Landing page
+│   ├── app.html            # Main app (post-login)
+│   ├── js/                 # Client-side JavaScript
+│   └── css/                # Styles
+├── scripts/                # Utility scripts
+│   ├── test_api_clients.py      # API client tests
+│   └── create_test_user.py      # Test user creation
+├── tests/                  # Test suite
+│   ├── test_api.py         # API integration tests
+│   └── test_services.py    # Service unit tests
+├── docs/                   # Documentation
+│   ├── spec.md            # Original specification (v1.0)
+│   └── AIP.md             # Agent Implementation Plan
+├── .specwright/specs/     # New specifications
+│   ├── enhanced-discovery-spec.md    # v0.3 (current focus)
+│   └── infra-upgrade-events-spec.md  # v1.0 (future)
+├── MILESTONES.md          # Development progress
+├── requirements.txt       # Python dependencies
+└── devserver.sh          # Development server script
+```
 
 ## Development Environment
 
@@ -70,4 +151,47 @@ This project is configured to run in a Nix-based environment managed by Firebase
     ./devserver.sh
     ```
 
-Please refer to the [Implementation Plan](./docs/AIP.md) for detailed instructions on the phased development and deployment of this project.
+4.  **Run Tests:**
+    ```bash
+    # Python tests
+    pytest tests/
+
+    # API client tests
+    python scripts/test_api_clients.py
+    ```
+
+## Key Concepts for AI Agents
+
+### Research Networks (Core Feature)
+- User-defined boundaries for tracking research areas
+- Flexible composition: topics + papers + authors + citations
+- Git-style versioning with branching
+- Visual pruning with exclusion lists
+- Background compute generates exploration blobs
+
+### Three-Layer Architecture
+1. **Firestore** (20ms): Network metadata, instant dashboard
+2. **BigQuery** (300ms): Paper storage, paginated browsing
+3. **Cloud Storage** (3-5s): Pre-computed blobs, graph exploration
+
+### Data Flow
+```
+User creates network → Firestore (instant)
+                    ↓
+Background job (60s) → BigQuery queries
+                    ↓
+                    Compute graph structure
+                    ↓
+                    Upload blob to Cloud Storage
+                    ↓
+User explores → Download blob (3-5s)
+             ↓
+             All interactions instant (in-memory)
+```
+
+### Current Priorities
+1. OpenAlex topic infrastructure (Phase 1)
+2. Topic browsing UI (Phase 2)
+3. Research Networks with CRUD + versioning (Phase 3) ← **Killer Feature**
+
+Please refer to the [Enhanced Discovery Spec](./.specwright/specs/enhanced-discovery-spec.md) for complete implementation details.
