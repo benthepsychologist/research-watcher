@@ -307,7 +307,26 @@ User: "Create Working Memory Research"
 
 ## Key Features
 
-### Research Networks (Killer Feature)
+### Enhanced Discovery - Topics (v0.3 - Complete)
+
+**Topic Infrastructure:**
+- 1,487 Social Sciences topics cached in Firestore (144 Psychology topics)
+- Hierarchical structure: Domain → Field → Subfield → Topic
+- Topics API with 6 endpoints for browsing and searching
+
+**Topics Browser:**
+- Interactive tab in frontend for field-wide discovery
+- Search topics by keyword with real-time results
+- Filter by field (Psychology, Economics, Arts, etc.)
+- Topic detail panels with hierarchy, stats, and keywords
+- Deployed at: https://research-watcher.web.app
+
+**Purpose:**
+- Discover "ALL of it" - see what's happening across the field
+- Explore subdisciplines without keyword filtering
+- Foundation for Research Networks (Phase 3)
+
+### Research Networks (Killer Feature - Phase 3)
 
 **Flexible Composition:**
 - Put whatever you want in the "bucket"

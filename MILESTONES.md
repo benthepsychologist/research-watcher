@@ -1,21 +1,35 @@
 # Research Watcher - Development Milestones
 
-**Project**: Research Watcher v0
-**Based on**: AIP 1.1 & Spec 1.0
-**Status**: 🟢 Phase 3 Complete
-**Current Phase**: Phase 3 → Phase 4 (Infra Upgrade Spec)
+**Project**: Research Watcher v0.3
+**Based on**: AIP 1.1, Spec 1.0, Enhanced Discovery Spec
+**Status**: 🟢 Enhanced Discovery Phase 2 Complete
+**Current Phase**: Phase 3 → Enhanced Discovery Phase 3 (Research Networks)
 **Last Updated**: 2025-11-11
 
 ---
 
 ## Milestone Overview
 
+### Foundation (v0 - Complete)
 | Phase | Milestone | Status | Completed |
 |-------|-----------|--------|-----------|
 | 0 | Bootstrap & Environment | ✅ | 2025-11-06 |
 | 1 | Backend Core (API Skeleton) | ✅ | 2025-11-06 |
 | 2 | Collector + Dual-Write | ✅ | 2025-11-08 |
-| 3 | Frontend & User Flow | ✅ | 2025-11-11 |
+| 3 | Frontend & User Flow + Firebase Hosting | ✅ | 2025-11-11 |
+
+### Enhanced Discovery (v0.3 - In Progress)
+| Phase | Milestone | Status | Completed |
+|-------|-----------|--------|-----------|
+| ED-1 | OpenAlex Topic Infrastructure | ✅ | 2025-11-11 |
+| ED-2 | Topic Browsing UI | ✅ | 2025-11-11 |
+| ED-3 | Research Networks (CRUD + Versioning) | ⏳ | - |
+| ED-4 | Citation & Author Networks | ⏳ | - |
+| ED-5 | Contextual Search | ⏳ | - |
+
+### Future (v1.0)
+| Phase | Milestone | Status | Completed |
+|-------|-----------|--------|-----------|
 | 4 | Event Ledger & Consumer Stub | ⏳ | - |
 | 5 | v1 Fan-Out Readiness | ⏳ | - |
 | 6 | Agentic Extensions (Optional) | ⏳ | - |
@@ -604,6 +618,110 @@ Before declaring v0 production-ready, verify:
 - [ ] API endpoints documented
 - [ ] Architecture diagrams
 - [ ] Contributing guidelines
+
+---
+
+## Enhanced Discovery Phase 1: OpenAlex Topic Infrastructure ✅
+
+**Status**: COMPLETE (2025-11-11)
+**Goal**: Fetch and cache OpenAlex topics for field-wide discovery
+
+### Tasks
+- [x] Create OpenAlex topics service (`app/services/openalex_topics.py`)
+  - [x] Fetch topics from OpenAlex API with pagination
+  - [x] Process topic hierarchy (Domain → Field → Subfield → Topic)
+  - [x] Cache topics in Firestore
+  - [x] Build hierarchical tree structure
+  - [x] Get topics by ID, field filter, or all topics
+- [x] Create fetch script (`scripts/fetch_openalex_topics.py`)
+  - [x] CLI tool with --max-results, --field, --dry-run options
+  - [x] Fetch Social Sciences domain (ID: 2)
+  - [x] Display statistics and hierarchy summary
+- [x] Fetch and cache all Social Sciences topics
+  - [x] Successfully cached 1,487 topics in Firestore
+  - [x] 144 Psychology topics (primary focus)
+  - [x] 6 fields total (Psychology, Economics, Arts, etc.)
+- [x] Create Topics API blueprint (`app/api/topics.py`)
+  - [x] GET /api/topics - List topics (flat or hierarchy)
+  - [x] GET /api/topics/{topicId} - Get topic details
+  - [x] GET /api/topics/search - Search by keyword
+  - [x] GET /api/topics/fields - List all fields
+  - [x] GET /api/topics/stats - Collection statistics
+- [x] Register topics blueprint in Flask app
+- [x] Deploy to Cloud Run
+
+### Deliverables
+- ✅ 1,487 topics cached in Firestore
+- ✅ 6 API endpoints functional
+- ✅ Topic hierarchy: Domain → Field → Subfield → Topic
+- ✅ Deployed and accessible via authentication
+
+### Topic Hierarchy
+- **Domain**: Social Sciences (1)
+- **Fields**: 6
+  - Economics, Econometrics and Finance: 107 topics
+  - Arts and Humanities: 266 topics
+  - Social Sciences: 764 topics
+  - Decision Sciences: 60 topics
+  - **Psychology: 144 topics** ← Primary focus
+  - Business, Management and Accounting: 146 topics
+
+---
+
+## Enhanced Discovery Phase 2: Topic Browsing UI ✅
+
+**Status**: COMPLETE (2025-11-11)
+**Goal**: Interactive frontend for browsing and exploring topics
+
+### Tasks
+- [x] Add Topics tab to app.html navigation
+  - [x] New "📚 Topics" tab button
+  - [x] topics-content container div
+  - [x] Tab switching integration
+- [x] Implement loadTopicsInterface function
+  - [x] Fetch stats and fields on load
+  - [x] Render interface with stats header
+  - [x] Default to Psychology topics
+- [x] Create topic browser interface
+  - [x] Gradient stats header (total topics, works, fields)
+  - [x] Search input with debounced keyword search
+  - [x] Field filter dropdown (6 fields)
+  - [x] Scrollable topics list (max 100 displayed)
+  - [x] Topic cards with hover effects
+- [x] Implement topic detail panel
+  - [x] Sticky side panel
+  - [x] Topic name and hierarchy
+  - [x] Paper and citation counts with colored badges
+  - [x] Full description
+  - [x] Keywords as pills (up to 10)
+  - [x] "View on OpenAlex" external link
+- [x] Add search functionality
+  - [x] Real-time search with 300ms debounce
+  - [x] Search across name, description, keywords
+  - [x] Field-scoped search option
+  - [x] Loading states during fetch
+- [x] Add filter functionality
+  - [x] Filter by field (Psychology, Economics, etc.)
+  - [x] Maintain selected field during search
+  - [x] Show topic count for each field
+- [x] Deploy to Firebase Hosting
+  - [x] Updated app.html deployed
+  - [x] Live at https://research-watcher.web.app
+
+### Deliverables
+- ✅ Interactive Topics tab functional
+- ✅ Search and filter working
+- ✅ Topic detail panels displaying correctly
+- ✅ Responsive design (3-column grid)
+- ✅ Deployed to production
+
+### User Experience
+Users can now:
+- Browse 1,487 topics across 6 fields
+- Search topics by keyword in real-time
+- Filter by field (defaults to Psychology)
+- View detailed information for each topic
+- Navigate to OpenAlex for more details
 
 ---
 

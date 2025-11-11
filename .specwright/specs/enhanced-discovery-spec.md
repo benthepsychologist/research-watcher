@@ -32,13 +32,17 @@ Transform Research Watcher from a seed-centric digest tool into a **field-wide d
 
 ## Acceptance Criteria
 
-### Core Features - Topics
-- [ ] Fetch and cache all OpenAlex psychology topics (~500 topics)
-- [ ] Topic browsing UI with hierarchy (Domain → Field → Subfield → Topic)
-- [ ] "What came out this week" per topic (time-filtered paper counts)
-- [ ] Topic detail view: papers within a topic (sorted by recency/citations)
-- [ ] User-defined topic groups (custom collections of topics)
-- [ ] Visual topic map (force-directed graph or similar)
+### Core Features - Topics (Phases 1-2: ✅ Complete)
+- [x] **Phase 1**: Fetch and cache all OpenAlex Social Sciences topics (1,487 topics, 144 Psychology)
+- [x] **Phase 1**: Topics API with 6 endpoints (list, detail, search, fields, stats, hierarchy)
+- [x] **Phase 1**: Hierarchical structure (Domain → Field → Subfield → Topic)
+- [x] **Phase 2**: Topic browsing UI with search and field filter
+- [x] **Phase 2**: Topic detail panel (hierarchy, stats, keywords, description)
+- [x] **Phase 2**: Interactive tabs for field-wide discovery
+- [ ] **Phase 3+**: "What came out this week" per topic (time-filtered paper counts)
+- [ ] **Phase 3+**: Topic detail view: papers within a topic (sorted by recency/citations)
+- [ ] **Phase 3+**: User-defined topic groups (custom collections of topics)
+- [ ] **Phase 3+**: Visual topic map (force-directed graph or similar)
 
 ### Core Features - Citations & Authors
 - [ ] Citation network visualization (forward/backward citations)
@@ -174,24 +178,23 @@ Transform Research Watcher from a seed-centric digest tool into a **field-wide d
    - Cost: ~500 API calls per week (within OpenAlex polite pool)
 
 **Deliverables:**
-- ✅ OpenAlex topics fetched and cached (~500 psychology topics)
-- ✅ Topic hierarchy API functional
-- ✅ Topic detail API with recent papers
-- ✅ Paper-topic associations stored
-- ✅ Weekly/monthly stats updated automatically
-- ✅ All topics browsable via API
+- ✅ **COMPLETE (2025-11-11)**: OpenAlex topics fetched and cached (1,487 Social Sciences topics, 144 Psychology)
+- ✅ **COMPLETE**: Topic hierarchy API functional (6 endpoints)
+- ✅ **COMPLETE**: Topic detail API with metadata
+- ⏳ Paper-topic associations stored (deferred to Phase 3)
+- ⏳ Weekly/monthly stats updated automatically (deferred to Phase 3)
+- ✅ **COMPLETE**: All topics browsable via API
 
-**Files to Touch:**
-- `app/services/openalex_topics.py` - NEW (topic fetching and caching)
-- `app/api/topics.py` - NEW (topics API blueprint)
-- `scripts/fetch_openalex_topics.py` - NEW (initial topic fetch)
-- `scripts/update_topic_stats.py` - NEW (weekly stats update)
-- `app/services/openalex_api.py` - Extend with topic-specific methods
-- `app/__init__.py` - Register topics blueprint
+**Files Created:**
+- ✅ `app/services/openalex_topics.py` - Topic fetching and caching service
+- ✅ `app/api/topics.py` - Topics API blueprint (6 endpoints)
+- ✅ `scripts/fetch_openalex_topics.py` - Initial topic fetch script
+- ⏳ `scripts/update_topic_stats.py` - Weekly stats update (deferred)
+- ✅ `app/__init__.py` - Topics blueprint registered
 
 ---
 
-### Phase 2: Topic Browsing UI
+### Phase 2: Topic Browsing UI ✅ COMPLETE (2025-11-11)
 
 **Goal:** Build user interface for exploring topics and viewing papers per topic
 
@@ -249,18 +252,26 @@ Transform Research Watcher from a seed-centric digest tool into a **field-wide d
    - Mobile (<768px): Single panel with slide-in detail view
 
 **Deliverables:**
-- ✅ Topic explorer tab functional
-- ✅ Topic tree with hierarchy and paper counts
-- ✅ Topic detail panel with time filters
-- ✅ Paper cards rendered per topic
-- ✅ Search and filtering working
-- ✅ Responsive design for all devices
+- ✅ **COMPLETE**: Topic explorer tab functional (📚 Topics tab in navigation)
+- ✅ **COMPLETE**: Topic list view with search and field filter
+- ✅ **COMPLETE**: Topic detail panel (hierarchy, stats, keywords, description)
+- ✅ **COMPLETE**: Real-time keyword search with debounce
+- ✅ **COMPLETE**: Field filter dropdown (Psychology, Economics, Arts, etc.)
+- ✅ **COMPLETE**: Responsive 3-column grid design
+- ⏳ Paper cards rendered per topic (deferred to Phase 3)
+- ⏳ Time filters (this week/month/year) (deferred to Phase 3)
 
-**Files to Touch:**
-- `public/app.html` - Add Topics tab
-- `public/js/topics.js` - NEW (topic tree, detail panel, interactions)
-- `public/css/topics.css` - NEW (styling for tree and panels)
-- `public/js/components/paper-card.js` - Extract reusable component
+**Files Created:**
+- ✅ `public/app.html` - Added Topics tab with complete interface (370+ lines)
+- ✅ Inline JavaScript for topic browsing, search, and detail rendering
+- ✅ Uses existing Tailwind CSS (no new CSS files needed)
+
+**Implementation Notes:**
+- Defaults to Psychology topics (144 topics) on load
+- Shows first 100 topics in scrollable list
+- Sticky side panel for topic details
+- View on OpenAlex link for external reference
+- Deployed to Firebase Hosting: https://research-watcher.web.app
 
 ---
 
