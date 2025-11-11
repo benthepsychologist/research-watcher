@@ -29,8 +29,13 @@ This project is built on a modern, serverless-first stack using Python, Flask, a
   - Production URL: https://research-watcher.web.app
   - Custom domain: app.researchwatcher.org (DNS configured, SSL pending)
 
-- 📋 **Next: Enhanced Discovery (Phases 1-5)**
-  - **Phase 1**: OpenAlex topic infrastructure (~500 psychology topics)
+- ✅ **Phase 1 (Enhanced Discovery)**: OpenAlex Topic Infrastructure (Complete)
+  - 1,487 Social Sciences topics cached in Firestore (144 Psychology topics)
+  - Topics API with 6 endpoints: list, detail, search, fields, stats, hierarchy
+  - Hierarchical topic structure: Domain → Field → Subfield → Topic
+  - Ready for frontend browsing UI
+
+- 📋 **Next: Enhanced Discovery (Phases 2-5)**
   - **Phase 2**: Topic browsing UI (tree view, detail panels)
   - **Phase 3**: Research Networks (CRUD boundaries with versioning) ← **Killer Feature**
   - **Phase 4**: Citation & author networks (graph exploration)
@@ -190,6 +195,32 @@ gcloud run deploy rw-api \
 **Backend URL:** https://rw-api-491582996945.us-central1.run.app
 
 **Note:** Firebase Hosting automatically proxies `/api/**` requests to Cloud Run.
+
+## API Endpoints
+
+### Topics API (Enhanced Discovery Phase 1)
+
+All endpoints require Firebase Authentication (Bearer token in Authorization header).
+
+- `GET /api/topics` - List all topics (flat or hierarchy format)
+  - Query params: `?field=Psychology&format=hierarchy`
+- `GET /api/topics/{topicId}` - Get topic details
+- `GET /api/topics/search` - Search topics by keyword
+  - Query params: `?q=memory&field=Psychology&limit=20`
+- `GET /api/topics/fields` - List all fields with topic counts
+- `GET /api/topics/stats` - Get topic collection statistics
+
+### Other APIs
+
+- `POST /api/users/sync` - Sync user profile
+- `GET /api/users/profile` - Get user profile
+- `GET /api/seeds` - Get research seeds
+- `POST /api/seeds` - Update seeds
+- `GET /api/digest/latest` - Get latest digest
+- `GET /api/search` - Search papers
+- `GET /api/saved` - Get saved papers
+- `POST /api/saved` - Save a paper
+- `DELETE /api/saved/{id}` - Remove saved paper
 
 ## Key Concepts for AI Agents
 
