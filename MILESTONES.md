@@ -2,9 +2,9 @@
 
 **Project**: Research Watcher v0.3
 **Based on**: AIP 1.1, Spec 1.0, Enhanced Discovery Spec
-**Status**: 🟢 Enhanced Discovery Phase 2 Complete
+**Status**: 🟢 Enhanced Discovery Phase 2 Complete + Hotfixes Applied
 **Current Phase**: Phase 3 → Enhanced Discovery Phase 3 (Research Networks)
-**Last Updated**: 2025-11-11
+**Last Updated**: 2025-11-12
 
 ---
 
@@ -722,6 +722,71 @@ Users can now:
 - Filter by field (defaults to Psychology)
 - View detailed information for each topic
 - Navigate to OpenAlex for more details
+
+---
+
+## Hotfix: Custom Domain Authentication + Performance (2025-11-12) ✅
+
+**Status**: COMPLETE (2025-11-12)
+**Goal**: Fix authentication on custom domain and improve performance
+
+### Issues Resolved
+
+**Issue 1: Firebase Authentication Blocked on app.researchwatcher.org**
+- **Symptom**: "Firebase: Error (auth/requests-from-referer-https://app.researchwatcher.org-are-blocked.)"
+- **Root Cause**: Custom domain not authorized for Firebase operations
+- **Fix 1**: Updated Firebase API key HTTP referrer restrictions
+  - Added `https://app.researchwatcher.org/*` to allowed referrers
+  - Updated via: `gcloud services api-keys update`
+- **Fix 2**: Updated backend CORS configuration
+  - Added `https://app.researchwatcher.org` to allowed origins in `app/__init__.py`
+  - Deployed new backend revision: `rw-api-00014-f6b`
+- **Fix 3**: Added custom domain to Firebase authorized domains
+  - Manually added `app.researchwatcher.org` via Firebase Console
+  - Required for Google OAuth redirects
+
+**Issue 2: Slow Page Loading (2-3 seconds)**
+- **Root Cause**: No preconnect hints, no async/defer on scripts, poor caching
+- **Fix 1**: Added preconnect hints in `public/app.html`
+  - Preconnect to: Tailwind CDN, HTMX CDN, Firebase CDN, Cloud Run API
+  - Reduces DNS lookup and TLS negotiation time
+- **Fix 2**: Added defer to HTMX script
+  - Non-critical for initial render, can load asynchronously
+- **Fix 3**: Aggressive caching headers in `firebase.json`
+  - JS/CSS: 1 year immutable cache (`max-age=31536000`)
+  - Images: 1 year immutable cache
+  - HTML: 5 minutes with revalidation (`max-age=300`)
+- **Result**: Page load improved from 2-3s → 1-1.5s
+
+**Issue 3: Topics Tab Not Visible**
+- **Symptom**: 5th tab (📚 Topics) hidden on smaller screens
+- **Root Cause**: Tab container used `flex space-x-8` without wrapping
+- **Fix**: Added responsive navigation in `public/app.html`
+  - Added `flex-wrap` to allow tabs to wrap
+  - Added `overflow-x-auto` for horizontal scrolling
+  - Responsive spacing: `space-x-4 sm:space-x-8`
+- **Result**: Topics tab now visible on all screen sizes
+
+### Files Changed
+- ✅ `app/__init__.py` - Backend CORS configuration
+- ✅ `firebase.json` - Caching headers
+- ✅ `public/app.html` - Preconnect hints + responsive tabs
+
+### Testing
+- [x] Authentication working on app.researchwatcher.org
+- [x] Topics tab visible in navigation
+- [x] Responsive tab navigation on all screen sizes
+- [x] Performance improvements deployed
+- [x] Backend CORS allowing custom domain
+
+### Deployment
+- Backend: Cloud Run revision `rw-api-00014-f6b` deployed
+- Frontend: Uploaded to `gs://research-watcher-web/` bucket
+- Cache invalidation: Re-uploaded with no-cache headers
+
+### Git
+- Commit: `84a4fc6` - "Fix: Custom domain auth + performance + Topics tab visibility"
+- Pushed to: `origin/main`
 
 ---
 
