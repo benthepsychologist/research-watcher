@@ -34,10 +34,13 @@ def create_app():
     app.config['DEBUG'] = os.getenv('FLASK_ENV', 'production') == 'development'
 
     # Configure CORS
-    # Allow Firebase Hosting, Cloud Storage, and localhost for development
+    # Allow Firebase Hosting, Cloud Storage, custom domain, and localhost for development
     CORS(app, resources={
         r"/api/*": {
             "origins": [
+                "https://app.researchwatcher.org",
+                "https://research-watcher.firebaseapp.com",
+                "https://research-watcher.web.app",
                 "https://research-watcher-491582996945.web.app",
                 "https://research-watcher-491582996945.firebaseapp.com",
                 "https://storage.googleapis.com",

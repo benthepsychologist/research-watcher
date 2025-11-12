@@ -5,13 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Research Watcher - Your Research Dashboard</title>
 
+    <!-- Preconnect to external resources -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://rw-api-491582996945.us-central1.run.app">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- HTMX (deferred - not critical for initial render) -->
+    <script defer src="https://unpkg.com/htmx.org@1.9.10"></script>
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (critical for auth - not deferred) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
@@ -71,7 +77,7 @@
     <!-- Tab Navigation -->
     <div class="bg-white border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex space-x-8" role="tablist">
+            <div class="flex flex-wrap space-x-4 sm:space-x-8 -mb-px overflow-x-auto" role="tablist">
                 <button class="tab-button py-4 px-1 border-b-2 border-indigo-500 font-medium text-sm text-indigo-600"
                         data-tab="digest">
                     Daily Digest
